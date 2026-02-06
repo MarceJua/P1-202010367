@@ -64,6 +64,61 @@ class GolampiBaseVisitor extends AbstractParseTreeVisitor implements GolampiVisi
 	 * The default implementation returns the result of calling
 	 * {@see self::visitChildren()} on `context`.
 	 */
+	public function visitForClassic(Context\ForClassicContext $context)
+	{
+	    return $this->visitChildren($context);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * The default implementation returns the result of calling
+	 * {@see self::visitChildren()} on `context`.
+	 */
+	public function visitForWhile(Context\ForWhileContext $context)
+	{
+	    return $this->visitChildren($context);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * The default implementation returns the result of calling
+	 * {@see self::visitChildren()} on `context`.
+	 */
+	public function visitForInfinite(Context\ForInfiniteContext $context)
+	{
+	    return $this->visitChildren($context);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * The default implementation returns the result of calling
+	 * {@see self::visitChildren()} on `context`.
+	 */
+	public function visitBreakStmt(Context\BreakStmtContext $context)
+	{
+	    return $this->visitChildren($context);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * The default implementation returns the result of calling
+	 * {@see self::visitChildren()} on `context`.
+	 */
+	public function visitContinueStmt(Context\ContinueStmtContext $context)
+	{
+	    return $this->visitChildren($context);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * The default implementation returns the result of calling
+	 * {@see self::visitChildren()} on `context`.
+	 */
 	public function visitPrintStmt(Context\PrintStmtContext $context)
 	{
 	    return $this->visitChildren($context);
@@ -87,6 +142,28 @@ class GolampiBaseVisitor extends AbstractParseTreeVisitor implements GolampiVisi
 	 * {@see self::visitChildren()} on `context`.
 	 */
 	public function visitAssignment(Context\AssignmentContext $context)
+	{
+	    return $this->visitChildren($context);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * The default implementation returns the result of calling
+	 * {@see self::visitChildren()} on `context`.
+	 */
+	public function visitIncrementDecrement(Context\IncrementDecrementContext $context)
+	{
+	    return $this->visitChildren($context);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * The default implementation returns the result of calling
+	 * {@see self::visitChildren()} on `context`.
+	 */
+	public function visitStmtTerminator(Context\StmtTerminatorContext $context)
 	{
 	    return $this->visitChildren($context);
 	}
@@ -252,17 +329,6 @@ class GolampiBaseVisitor extends AbstractParseTreeVisitor implements GolampiVisi
 	 * {@see self::visitChildren()} on `context`.
 	 */
 	public function visitType(Context\TypeContext $context)
-	{
-	    return $this->visitChildren($context);
-	}
-
-	/**
-	 * {@inheritdoc}
-	 *
-	 * The default implementation returns the result of calling
-	 * {@see self::visitChildren()} on `context`.
-	 */
-	public function visitStmtTerminator(Context\StmtTerminatorContext $context)
 	{
 	    return $this->visitChildren($context);
 	}

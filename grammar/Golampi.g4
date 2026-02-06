@@ -4,19 +4,39 @@ grammar Golampi;
 
 file: instruction* EOF;
 
-instruction: printStmt | varDecl | assignStmt | ifStmt | block;
+instruction:
+	printStmt
+	| varDecl
+	| assignStmt
+	| ifStmt
+	| forStmt
+	| breakStmt
+	| continueStmt
+	| block;
 
 block: '{' instruction* '}';
 
 ifStmt:
 	'if' expression block ('else' (block | ifStmt))? # IfStatement;
 
+forStmt:
+	'for' varDecl expression ';' assignStmt block	# ForClassic
+	| 'for' expression block						# ForWhile
+	| 'for' block									# ForInfinite;
+
+breakStmt: 'break' stmtTerminator;
+continueStmt: 'continue' stmtTerminator;
+
 printStmt: 'fmt.Println' '(' expressionList? ')' stmtTerminator;
 
 varDecl:
 	'var' ID type ('=' expression)? stmtTerminator # VarDeclaration;
 
-assignStmt: ID '=' expression stmtTerminator # Assignment;
+assignStmt:
+	ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression stmtTerminator	# Assignment
+	| ID op = ('++' | '--') stmtTerminator								# IncrementDecrement;
+
+stmtTerminator: ';' | NEWLINE | EOF;
 
 expressionList: expression (',' expression)*;
 
@@ -34,9 +54,8 @@ expression:
 	| INT													# IntExpr
 	| STRING												# StrExpr
 	| BOOL													# BoolExpr;
-type: 'int' | 'int32' | 'string' | 'bool';
 
-stmtTerminator: ';' | NEWLINE | EOF;
+type: 'int' | 'int32' | 'string' | 'bool';
 
 // --- LEXER ---
 
@@ -45,6 +64,17 @@ VAR: 'var';
 FMT: 'fmt.Println';
 IF: 'if';
 ELSE: 'else';
+FOR: 'for';
+BREAK: 'break';
+CONTINUE: 'continue';
+
+//operadores
+PLUS_ASSIGN: '+=';
+MINUS_ASSIGN: '-=';
+MUL_ASSIGN: '*=';
+DIV_ASSIGN: '/=';
+INC: '++';
+DEC: '--';
 
 // Tipos
 TYPE_INT: 'int' | 'int32';

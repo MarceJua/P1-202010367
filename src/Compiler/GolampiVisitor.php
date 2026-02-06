@@ -51,6 +51,54 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitIfStatement(Context\IfStatementContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `ForClassic` labeled alternative
+	 * in {@see GolampiParser::forStmt()}.
+	 *
+	 * @param Context\ForClassicContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForClassic(Context\ForClassicContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ForWhile` labeled alternative
+	 * in {@see GolampiParser::forStmt()}.
+	 *
+	 * @param Context\ForWhileContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForWhile(Context\ForWhileContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ForInfinite` labeled alternative
+	 * in {@see GolampiParser::forStmt()}.
+	 *
+	 * @param Context\ForInfiniteContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForInfinite(Context\ForInfiniteContext $context);
+
+	/**
+	 * Visit a parse tree produced by {@see GolampiParser::breakStmt()}.
+	 *
+	 * @param Context\BreakStmtContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitBreakStmt(Context\BreakStmtContext $context);
+
+	/**
+	 * Visit a parse tree produced by {@see GolampiParser::continueStmt()}.
+	 *
+	 * @param Context\ContinueStmtContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitContinueStmt(Context\ContinueStmtContext $context);
+
+	/**
 	 * Visit a parse tree produced by {@see GolampiParser::printStmt()}.
 	 *
 	 * @param Context\PrintStmtContext $context The parse tree.
@@ -78,6 +126,25 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitAssignment(Context\AssignmentContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `IncrementDecrement` labeled alternative
+	 * in {@see GolampiParser::assignStmt()}.
+	 *
+	 * @param Context\IncrementDecrementContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitIncrementDecrement(Context\IncrementDecrementContext $context);
+
+	/**
+	 * Visit a parse tree produced by {@see GolampiParser::stmtTerminator()}.
+	 *
+	 * @param Context\StmtTerminatorContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitStmtTerminator(Context\StmtTerminatorContext $context);
 
 	/**
 	 * Visit a parse tree produced by {@see GolampiParser::expressionList()}.
@@ -226,13 +293,4 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitType(Context\TypeContext $context);
-
-	/**
-	 * Visit a parse tree produced by {@see GolampiParser::stmtTerminator()}.
-	 *
-	 * @param Context\StmtTerminatorContext $context The parse tree.
-	 *
-	 * @return mixed The visitor result.
-	 */
-	public function visitStmtTerminator(Context\StmtTerminatorContext $context);
 }

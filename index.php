@@ -10,29 +10,25 @@ use App\Visitor; // Importante: Cargar tu Visitor
 
 // Código de prueba Fase 3
 $input = '
-var x int = 10
-var global string = "Soy Global"
-
-fmt.Println("Inicio del programa. x vale:", x)
-
-if x > 5 {
-    fmt.Println("Entrando al bloque IF...")
-    var local string = "Soy Local del If"
-    
-    // Mostramos variables
-    fmt.Println(global)
-    fmt.Println(local)
-    
-    // Modificamos variable externa
-    x = 20
-} else {
-    fmt.Println("Esto no debería imprimirse")
+fmt.Println("--- Test For Clásico ---")
+// Imprimir pares del 0 al 4
+for var i int = 0; i < 5; i++ {
+    if i % 2 == 0 {
+        fmt.Println("Par:", i)
+    }
 }
 
-fmt.Println("Fuera del IF. x vale:", x)
-
-// Esto debería dar error si descomentas la línea (porque "local" ya no existe):
- fmt.Println(local)
+fmt.Println("--- Test While y Break ---")
+var cont int = 10
+for cont > 0 {
+    fmt.Println("Countdown:", cont)
+    cont -= 1 // Probando el -=
+    
+    if cont == 7 {
+        fmt.Println("¡Abortando misión en 7!")
+        break
+    }
+}
 ';
 
 $inputStream = InputStream::fromString($input);

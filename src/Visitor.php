@@ -97,13 +97,88 @@ class Visitor extends GolampiBaseVisitor
     // --- Asignación ---
     public function visitAssignment($ctx)
     {
-        $id = $ctx->ID()->getText();
-        $nuevoValor = $this->visit($ctx->expression());
+        // Aseguramos que la propiedad op exista (se generará al compilar bien el g4)
+        if ($ctx->op === null) return;
 
-        try {
-            $this->entorno->asignar($id, $nuevoValor);
-        } catch (\Exception $e) {
-            echo "Error: " . $e->getMessage() . "\n";
+        $id = $ctx->ID()->getText();
+        $op = $ctx->op->getText(); // Ahora sí funcionará
+
+        // Obtenemos valor actual
+        $var = $this->entorno->obtener($id); // OJO: obtener() devuelve array ['valor'=>X, 'tipo'=>Y]
+        $actual = $var['valor'];
+
+        // Calculamos nuevo valor
+        $valDerecha = $this->visit($ctx->expression());
+
+        $nuevoValor = match ($op) {
+            '='  => $valDerecha,
+            '+=' => $actual + $valDerecha,
+            '-=' => $actual - $valDerecha,
+            '*=' => $actual * $valDerecha,
+            '/=' => $actual / $valDerecha,
+            default => $actual
+        };
+
+        $this->entorno->asignar($id, $nuevoValor);
+    }
+
+    public function visitIncrementDecrement($ctx)
+    {
+        $id = $ctx->ID()->getText();
+        $actual = $this->entorno->obtener($id)['valor'];
+        $op = $ctx->op->getText();
+
+        if ($op === '++') $this->entorno->asignar($id, $actual + 1);
+        if ($op === '--') $this->entorno->asignar($id, $actual - 1);
+    }
+
+    // --- NUEVO: Ciclos FOR ---
+
+    public function visitForClassic($ctx)
+    {
+        // 1. Crear entorno para el ciclo (el 'var i = 0' vive aquí)
+        $anterior = $this->entorno;
+        $this->entorno = new Environment($anterior);
+
+        // 2. Ejecutar Inicialización (var i int = 0)
+        $this->visit($ctx->varDecl());
+
+        // 3. Ciclo
+        while (true) {
+            // Evaluar Condición
+            $cond = $this->visit($ctx->expression());
+            if ($cond === false) break;
+
+            try {
+                // Ejecutar Bloque (OJO: El bloque crea SU PROPIO sub-entorno, eso está bien)
+                $this->visit($ctx->block());
+            } catch (BreakException $e) {
+                break; // Rompe el while de PHP
+            } catch (ContinueException $e) {
+                // No hace nada, solo salta al update
+            }
+
+            // Ejecutar Update (i++)
+            $this->visit($ctx->assignStmt());
+        }
+
+        // 4. Restaurar entorno
+        $this->entorno = $anterior;
+    }
+
+    public function visitForWhile($ctx)
+    {
+        while (true) {
+            $cond = $this->visit($ctx->expression());
+            if ($cond === false) break;
+
+            try {
+                $this->visit($ctx->block());
+            } catch (BreakException $e) {
+                break;
+            } catch (ContinueException $e) {
+                continue;
+            }
         }
     }
 
@@ -261,6 +336,15 @@ class Visitor extends GolampiBaseVisitor
     public function visitNotExpr($ctx)
     {
         return !$this->visit($ctx->expression());
+    }
+
+    public function visitBreakStmt($ctx)
+    {
+        throw new BreakException();
+    }
+    public function visitContinueStmt($ctx)
+    {
+        throw new ContinueException();
     }
 
     // --- Tipos Primitivos ---

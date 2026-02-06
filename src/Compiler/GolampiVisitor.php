@@ -214,6 +214,25 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitConstDeclaration(Context\ConstDeclarationContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `ShortVarDeclaration` labeled alternative
+	 * in {@see GolampiParser::shortVarDecl()}.
+	 *
+	 * @param Context\ShortVarDeclarationContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitShortVarDeclaration(Context\ShortVarDeclarationContext $context);
+
+	/**
+	 * Visit a parse tree produced by {@see GolampiParser::idList()}.
+	 *
+	 * @param Context\IdListContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitIdList(Context\IdListContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `PtrAssignment` labeled alternative
 	 * in {@see GolampiParser::assignStmt()}.
 	 *
@@ -302,6 +321,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitFloatExpr(Context\FloatExprContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `NilExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\NilExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitNilExpr(Context\NilExprContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `IdExpr` labeled alternative
 	 * in {@see GolampiParser::expression()}.
 	 *
@@ -360,6 +389,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitOrExpr(Context\OrExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `RuneExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\RuneExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitRuneExpr(Context\RuneExprContext $context);
 
 	/**
 	 * Visit a parse tree produced by the `MulDivExpr` labeled alternative

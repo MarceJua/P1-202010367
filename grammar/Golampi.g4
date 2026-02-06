@@ -9,6 +9,7 @@ instruction:
 	| printStmt
 	| varDecl
 	| constDecl
+	| shortVarDecl
 	| assignStmt
 	| ifStmt
 	| switchStmt
@@ -66,6 +67,11 @@ varDecl:
 constDecl:
 	'const' ID type '=' expression stmtTerminator # ConstDeclaration;
 
+shortVarDecl:
+	idList ':=' expressionList stmtTerminator # ShortVarDeclaration;
+
+idList: ID (',' ID)*;
+
 assignStmt:
 	'*' ID '=' expression stmtTerminator									# PtrAssignment
 	| ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression stmtTerminator	# Assignment
@@ -99,11 +105,21 @@ expression:
 	| '(' expression ')'									# ParenExpr
 	| ID													# IdExpr
 	| FLOAT													# FloatExpr
+	| RUNE													# RuneExpr
+	| NIL													# NilExpr
 	| INT													# IntExpr
 	| STRING												# StrExpr
 	| BOOL													# BoolExpr;
 
-type: 'int' | 'int32' | 'string' | 'bool' | '[' INT ']' type;
+type:
+	'int'
+	| 'int32'
+	| 'float32'
+	| 'string'
+	| 'bool'
+	| 'rune'
+	| '*' type
+	| '[' INT ']' type;
 
 // --- LEXER ---
 
@@ -138,10 +154,13 @@ TYPE_BOOL: 'bool';
 BOOL: 'true' | 'false';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 FLOAT: [0-9]+ '.' [0-9]+;
+RUNE: '\'' ( '\\' . | ~['\\]) '\'';
+NIL: 'nil';
 INT: [0-9]+;
 STRING: '"' ( '\\' . | ~["\\])* '"';
 
 // Comentarios y Espacios
+COMMENT_MULTI: '/*' .*? '*/' -> skip;
 COMMENT: '//' ~[\r\n]* -> skip;
 WS: [ \t]+ -> skip;
 NEWLINE: [\r\n]+;

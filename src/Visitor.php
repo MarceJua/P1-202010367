@@ -22,37 +22,38 @@ class Visitor extends GolampiBaseVisitor
      */
     public function visitFile($ctx)
     {
-        // 1. Primera Pasada: Registrar todas las funciones y variables globales
+        // 1. Registrar globales...
         foreach ($ctx->children as $child) {
             $this->visit($child);
         }
 
-        // 2. Ejecución Automática de 'main'
+        // 2. Ejecutar Main
         try {
-            // Buscamos si existe la función 'main' en el entorno global
             $mainData = $this->entorno->obtener('main');
             $funcionMain = $mainData['valor'];
 
             if ($funcionMain instanceof FunctionDef) {
-                // Preparamos el entorno para main (Hijo del Global)
+                // ... (lógica de crear entorno y ejecutar) ...
                 $envAnterior = $this->entorno;
                 $this->entorno = new Environment($envAnterior);
-
-                // Ejecutamos el cuerpo de main
                 try {
                     $this->visit($funcionMain->block);
                 } catch (ReturnException $e) {
-                    // Si main tiene un return, simplemente termina
+                    // Main terminó normal
                 }
-
-                // Restauramos el entorno
                 $this->entorno = $envAnterior;
             }
         } catch (\Exception $e) {
-            // Si no se encuentra 'main', lanzamos el error obligatorio según enunciado
-            echo "\n[ADVERTENCIA] No se encontró la función 'main'. Asegúrate de definirla.\n";
+            // --- CORRECCIÓN AQUÍ ---
+            // Si el error dice "Variable main no encontrada", entonces sí falta el main.
+            // Si dice otra cosa, es un error de TU código Golampi.
+            if ($e->getMessage() === "Error Semántico: Variable 'main' no encontrada.") {
+                echo "\n[ADVERTENCIA] No se encontró la función 'main'.\n";
+            } else {
+                echo "\nERROR FATAL EN EJECUCIÓN:\n";
+                echo $e->getMessage() . "\n"; // ¡Esto nos dirá qué falló realmente!
+            }
         }
-
         return null;
     }
 
@@ -447,12 +448,23 @@ class Visitor extends GolampiBaseVisitor
 
     public function visitReturnStmt($ctx)
     {
-        $valor = null;
+        $valores = [];
         if ($ctx->expressionList() !== null) {
-            // Por simplicidad tomamos el primero (Golampi soporta múltiples, pero paso a paso)
-            $valor = $this->visit($ctx->expressionList()->expression(0));
+            foreach ($ctx->expressionList()->expression() as $expr) {
+                $valores[] = $this->visit($expr);
+            }
         }
-        throw new ReturnException($valor);
+
+        // Si devuelve algo vacío -> null
+        // Si devuelve 1 cosa -> valor
+        // Si devuelve N cosas -> array [val1, val2]
+        $resultado = match (count($valores)) {
+            0 => null,
+            1 => $valores[0],
+            default => $valores
+        };
+
+        throw new ReturnException($resultado);
     }
 
     public function visitCallExpr($ctx)
@@ -702,6 +714,68 @@ class Visitor extends GolampiBaseVisitor
         // $this->entorno = $anterior;
     }
 
+    // --- NIL ---
+    public function visitNilExpr($ctx)
+    {
+        return null; // Usamos null de PHP para representar nil
+    }
+
+    // --- DECLARACIÓN CORTA (x := 10) ---
+    public function visitShortVarDeclaration($ctx)
+    {
+        // 1. Obtener IDs y Expresiones
+        $ids = [];
+        foreach ($ctx->idList()->ID() as $node) $ids[] = $node->getText();
+
+        $valores = [];
+        foreach ($ctx->expressionList()->expression() as $expr) {
+            $valores[] = $this->visit($expr);
+        }
+
+        // Caso especial: Función retorna múltiples valores
+        // Si hay 2 variables y 1 expresión que retorna array... (Lógica de desempaquetado)
+        if (count($ids) > 1 && count($valores) === 1 && is_array($valores[0])) {
+            $valores = $valores[0]; // Desempaquetamos
+        }
+
+        if (count($ids) !== count($valores)) {
+            throw new \Exception("Error Semántico: Desajuste en asignación corta (esperados " . count($ids) . ", recibidos " . count($valores) . ").");
+        }
+
+        // 2. Validar REGLA: "Al menos una variable debe ser nueva"
+        $algunaNueva = false;
+
+        // 3. Asignar/Declarar
+        for ($i = 0; $i < count($ids); $i++) {
+            $id = $ids[$i];
+            $val = $valores[$i];
+
+            // Inferencia de Tipo
+            $tipo = match (true) {
+                is_int($val) => 'int',
+                is_float($val) => 'float32',
+                is_bool($val) => 'bool',
+                is_string($val) => 'string',
+                $val instanceof GolampiArray => 'array', // O mejor: '['.$val->size.']'.$val->subType
+                is_null($val) => 'nil', // Caso raro
+                default => 'unknown'
+            };
+
+            // Intentamos declarar. Si falla porque existe, intentamos asignar.
+            try {
+                $this->entorno->declarar($id, $val, $tipo);
+                $algunaNueva = true;
+            } catch (\Exception $e) {
+                // Ya existe, asignamos
+                $this->entorno->asignar($id, $val);
+            }
+        }
+
+        if (!$algunaNueva) {
+            throw new \Exception("Error Semántico: Declaración corta ':=' sin variables nuevas.");
+        }
+    }
+
     // Método auxiliar para exprStmt (llamada sin uso de valor)
     public function visitExprStmt($ctx)
     {
@@ -778,5 +852,12 @@ class Visitor extends GolampiBaseVisitor
     public function visitFloatExpr($ctx)
     {
         return floatval($ctx->getText());
+    }
+
+    public function visitRuneExpr($ctx)
+    {
+        // Quitamos comillas 'A' -> A
+        $texto = $ctx->getText(); // '@'
+        return trim($texto, "'"); // Retorna solo el caracter @
     }
 }

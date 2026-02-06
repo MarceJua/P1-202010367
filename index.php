@@ -13,45 +13,48 @@ use App\Compiler\GolampiParser;
 use App\Visitor;
 
 $input = '
-// 1. Variable Global
-var titulo string = "--- EJECUCIÓN FINAL GOLAMPI ---"
+/* PRUEBA DE INTEGRACIÓN FINAL
+   Comentario Multi-línea: OK
+*/
 
-// 2. Función Recursiva (Factorial)
-func factorial(n int) int {
-    if n <= 1 {
-        return 1
-    }
-    return n * factorial(n - 1)
+// 1. Tipos Nuevos y Constantes
+const PI float32 = 3.1416
+var letra rune = \'@\'
+
+// 2. Función con Múltiples Retornos
+func calcular(a int, b int) (int, int) {
+    return a + b, a * b
 }
 
-// 3. Función con Punteros (Referencia)
-func duplicar(p *int) {
-    *p = *p * 2
-}
-
-// 4. Función Principal (Punto de entrada)
 func main() {
-    fmt.Println(titulo)
+    fmt.Println(">>> INICIO SYSTEM CHECK <<<")
+
+    // 3. Declaración Corta (Short Decl) e Inferencia
+    mensaje := "Hola Golampi"  // Infiere string
+    x, y := 10, 20             // Múltiple
     
-    // Prueba de Factorial
-    var num int = 5
-    var fact int = factorial(num)
-    fmt.Println("El factorial de", num, "es:", fact)
+    fmt.Println(mensaje)
+    fmt.Println("Valores iniciales:", x, y)
+
+    // 4. Múltiples Retornos + Short Decl
+    suma, multi := calcular(x, y)
+    fmt.Println("Suma:", suma, "| Multi:", multi)
+
+    // 5. Valor NIL y Validación
+    // Golampi dice: Operación con nil es error o da nil.
+    // var nulo *int = nil
+    // fmt.Println("Valor nulo:", nulo) 
+
+    // 6. Prueba Rune y Float
+    fmt.Println("Rune:", letra)
+    fmt.Println("Float Constante:", PI)
+
+    // 7. Re-declaración corta (validar que una sea nueva)
+    // x ya existe, pero z es nueva -> DEBE FUNCIONAR
+    x, z := 50, 100 
+    fmt.Println("x actualizado:", x, "| z nuevo:", z)
     
-    // Prueba de Punteros
-    fmt.Println("Valor original de num:", num)
-    duplicar(&num)
-    fmt.Println("Valor duplicado (por referencia):", num)
-    
-    // Prueba de Array y Ciclo
-    var lista [3]string = [3]string{"Proyecto", "Final", "Listo"}
-    fmt.Println("Mensaje desde Array:")
-    
-    for var i int = 0; i < len(lista); i++ {
-        fmt.Println("-", lista[i])
-    }
-    
-    fmt.Println(">>> FIN DEL PROGRAMA <<<")
+    fmt.Println(">>> SYSTEM CHECK COMPLETADO <<<")
 }
 ';
 

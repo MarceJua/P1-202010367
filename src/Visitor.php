@@ -7,12 +7,13 @@ use App\Compiler\GolampiParser;
 
 class Visitor extends GolampiBaseVisitor
 {
-    private Environment $entorno; // Propiedad para guardar la tabla de símbolos
+    private Environment $entorno;
+    private Environment $globalEnv; // <--- 1. Asegúrate de tener esto declarado
 
     public function __construct()
     {
-        // Al iniciar, creamos el entorno Global (sin padre)
         $this->entorno = new Environment(null);
+        $this->globalEnv = $this->entorno;
     }
 
     /**
@@ -34,50 +35,38 @@ class Visitor extends GolampiBaseVisitor
      */
     public function visitPrintStmt($ctx)
     {
-
         $exprListCtx = $ctx->expressionList();
 
         if ($exprListCtx === null) {
-            echo "\n"; // Print vacío
+            echo "\n";
             return;
         }
 
-        // 2. Recorremos cada expresión (ej: "Hola", 2026)
         $output = [];
         foreach ($exprListCtx->expression() as $expr) {
-            // visit() evalúa la expresión y nos devuelve su valor real (int o string)
             $val = $this->visit($expr);
 
             if (is_bool($val)) {
                 $val = $val ? 'true' : 'false';
             }
 
-            // Quitamos las comillas si es string para imprimir limpio
-            if (is_string($val) && str_starts_with($val, '"')) {
-                $val = trim($val, '"');
-            }
+            // Nota: Ya no hacemos trim($val, '"') porque visitStrExpr lo hace.
             $output[] = $val;
         }
 
-        // 3. Imprimimos al estilo Go (separado por espacios + salto de línea)
         echo implode(" ", $output) . "\n";
     }
 
-
     public function visitVarDeclaration($ctx)
     {
-        // 1. Obtener el nombre de la variable
         $id = $ctx->ID()->getText();
-
-        // 2. Obtener el tipo declarado (ej: "int")
         $tipo = $ctx->type()->getText();
 
-        // 3. Obtener el valor (si tiene asignación)
         $valor = null;
         if ($ctx->expression() !== null) {
             $valor = $this->visit($ctx->expression());
         } else {
-            // Valor por defecto si no se asigna nada (según enunciado)
+            // Valores por defecto...
             $valor = match ($tipo) {
                 'int', 'int32' => 0,
                 'string' => "",
@@ -86,7 +75,13 @@ class Visitor extends GolampiBaseVisitor
             };
         }
 
-        // 4. Guardar en la Tabla de Símbolos
+        // --- VALIDACIÓN DE SEGURIDAD ---
+        if ($valor instanceof FunctionDef) {
+            echo "[ERROR SEMÁNTICO] No puedes asignar la función '$id' a una variable. ¿Olvidaste los paréntesis '()' en la llamada?\n";
+            return;
+        }
+        // -------------------------------
+
         try {
             $this->entorno->declarar($id, $valor, $tipo);
         } catch (\Exception $e) {
@@ -313,6 +308,186 @@ class Visitor extends GolampiBaseVisitor
         };
     }
 
+    // --- FUNCIONES ---
+
+    public function visitFuncDeclaration($ctx)
+    {
+        $id = $ctx->ID()->getText();
+
+        // 1. Recopilar parámetros
+        $params = [];
+        if ($ctx->paramList() !== null) {
+            foreach ($ctx->paramList()->param() as $p) {
+                $params[] = [
+                    'id' => $p->ID()->getText(),
+                    'tipo' => $p->type()->getText()
+                ];
+            }
+        }
+
+        // 2. Determinar tipo de retorno
+        $returnType = "void";
+        if ($ctx->typeList() !== null) {
+            $returnType = $ctx->typeList()->getText();
+        }
+
+        // 3. Guardar la definición en el entorno actual (debería ser el global)
+        $funcion = new FunctionDef($params, $ctx->block(), $returnType);
+        $this->entorno->declarar($id, $funcion, "function");
+    }
+
+    public function visitReturnStmt($ctx)
+    {
+        $valor = null;
+        if ($ctx->expressionList() !== null) {
+            // Por simplicidad tomamos el primero (Golampi soporta múltiples, pero paso a paso)
+            $valor = $this->visit($ctx->expressionList()->expression(0));
+        }
+        throw new ReturnException($valor);
+    }
+
+    public function visitCallExpr($ctx)
+    {
+        $nombreFuncion = $ctx->ID()->getText();
+
+        // ===========================================================
+        //                 Fase 7: FUNCIONES NATIVAS
+        // ===========================================================
+
+        // 1. Interceptamos las funciones nativas antes de buscar en el entorno
+        if ($nombreFuncion === 'len') {
+            if ($ctx->expressionList() === null || count($ctx->expressionList()->expression()) !== 1) {
+                throw new \Exception("Error Semántico: 'len' espera 1 argumento.");
+            }
+
+            $valor = $this->visit($ctx->expressionList()->expression(0));
+
+            if (is_string($valor)) {
+                return strlen($valor); // Cuenta bytes (estándar en Go/C)
+            }
+            if (is_array($valor)) {
+                return count($valor);
+            }
+            throw new \Exception("Error Semántico: 'len' no soporta este tipo de dato.");
+        }
+
+        if ($nombreFuncion === 'typeof') {
+            if ($ctx->expressionList() === null || count($ctx->expressionList()->expression()) !== 1) {
+                throw new \Exception("Error Semántico: 'typeof' espera 1 argumento.");
+            }
+
+            $valor = $this->visit($ctx->expressionList()->expression(0));
+
+            // Mapeo exacto a tipos de Golampi
+            return match (gettype($valor)) {
+                'integer' => 'int',
+                'double'  => 'float32',
+                'string'  => 'string',
+                'boolean' => 'bool',
+                'NULL'    => 'nil',
+                'array'   => 'array', // Para cuando implementemos arreglos
+                default   => 'unknown'
+            };
+        }
+
+        if ($nombreFuncion === 'substr') {
+            $args = $ctx->expressionList()->expression();
+            if (count($args) !== 3) {
+                throw new \Exception("Error Semántico: 'substr' espera 3 argumentos.");
+            }
+
+            $str = $this->visit($args[0]);
+            $start = $this->visit($args[1]);
+            $length = $this->visit($args[2]);
+
+            // Validación estricta
+            if (!is_string($str) || !is_int($start) || !is_int($length)) {
+                throw new \Exception("Error Semántico: Tipos incorrectos para 'substr(string, int, int)'.");
+            }
+
+            // Manejo seguro de PHP substr (para evitar warnings si el índice se pasa)
+            if ($start < 0 || $length < 0) {
+                throw new \Exception("Error Runtime: Índices negativos en substr.");
+            }
+
+            $resultado = substr($str, $start, $length);
+            return $resultado === false ? "" : $resultado;
+        }
+
+        if ($nombreFuncion === 'now') {
+            return date('Y-m-d H:i:s');
+        }
+
+        // ===========================================================
+        //              FIN FUNCIONES NATIVAS
+        // ===========================================================
+
+        // 2. Si no es nativa, buscamos la función de usuario en el entorno
+        // (Esta es tu lógica original, la mantenemos igual)
+
+        try {
+            $funcData = $this->entorno->obtener($nombreFuncion);
+        } catch (\Exception $e) {
+            throw new \Exception("Error Semántico: Función '$nombreFuncion' no definida.");
+        }
+
+        $funcion = $funcData['valor'];
+
+        if (!($funcion instanceof FunctionDef)) {
+            throw new \Exception("Error Semántico: '$nombreFuncion' no es una función.");
+        }
+
+        // Evaluar Argumentos
+        $argumentos = [];
+        if ($ctx->expressionList() !== null) {
+            foreach ($ctx->expressionList()->expression() as $argExpr) {
+                $argumentos[] = $this->visit($argExpr);
+            }
+        }
+
+        // Validar cantidad de argumentos
+        if (count($argumentos) !== count($funcion->params)) {
+            throw new \Exception("Error: La función '$nombreFuncion' espera " . count($funcion->params) . " argumentos.");
+        }
+
+        // Preparar entorno nuevo (Global como padre)
+        $envGlobal = $this->getGlobalEnv();
+        $envFuncion = new Environment($envGlobal);
+
+        // Asignar parámetros
+        for ($i = 0; $i < count($argumentos); $i++) {
+            $paramNombre = $funcion->params[$i]['id'];
+            $paramTipo = $funcion->params[$i]['tipo'];
+            $envFuncion->declarar($paramNombre, $argumentos[$i], $paramTipo);
+        }
+
+        // Ejecutar
+        $envAnterior = $this->entorno;
+        $this->entorno = $envFuncion;
+
+        $retorno = null;
+        try {
+            $this->visit($funcion->block);
+        } catch (ReturnException $e) {
+            $retorno = $e->value;
+        }
+
+        // Restaurar
+        $this->entorno = $envAnterior;
+        return $retorno;
+    }
+
+    // Método auxiliar para exprStmt (llamada sin uso de valor)
+    public function visitExprStmt($ctx)
+    {
+        $this->visit($ctx->expression());
+    }
+
+    private function getGlobalEnv()
+    {
+        return $this->globalEnv;
+    }
+
     // --- OPERADORES LÓGICOS (&&, ||) ---
 
     public function visitAndExpr($ctx)
@@ -354,7 +529,15 @@ class Visitor extends GolampiBaseVisitor
     }
     public function visitStrExpr($ctx)
     {
-        return $ctx->getText();
+        $textoRaw = $ctx->getText();
+        $contenido = substr($textoRaw, 1, -1);
+        $procesado = str_replace(
+            ['\\n', '\\t', '\\r', '\\"', '\\\\'],
+            ["\n", "\t", "\r", "\"", "\\"],
+            $contenido
+        );
+
+        return $procesado;
     }
     public function visitBoolExpr($ctx)
     {

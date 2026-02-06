@@ -5,16 +5,38 @@ grammar Golampi;
 file: instruction* EOF;
 
 instruction:
-	printStmt
+	funcDecl
+	| printStmt
 	| varDecl
 	| assignStmt
 	| ifStmt
 	| forStmt
 	| breakStmt
 	| continueStmt
-	| block;
+	| returnStmt
+	| exprStmt
+	| block
+	| NEWLINE;
 
 block: '{' instruction* '}';
+
+// --- FUNCIONES ---
+
+// func suma(a int, b int) int { ... }
+funcDecl:
+	'func' ID '(' paramList? ')' (typeList)? block # FuncDeclaration;
+
+paramList: param (',' param)*;
+
+param: ID type # ParamDef;
+
+// Lista de tipos de retorno (puede ser uno o varios, o ninguno)
+typeList: type | '(' type (',' type)* ')';
+
+returnStmt: 'return' expressionList? stmtTerminator;
+
+// Llamada a función como instrucción (sin asignar valor)
+exprStmt: expression stmtTerminator;
 
 ifStmt:
 	'if' expression block ('else' (block | ifStmt))? # IfStatement;
@@ -49,13 +71,14 @@ expression:
 	| expression op = ('==' | '!=') expression				# EqExpr
 	| expression '&&' expression							# AndExpr
 	| expression '||' expression							# OrExpr
+	| ID '(' expressionList? ')'							# CallExpr
 	| '(' expression ')'									# ParenExpr
 	| ID													# IdExpr
 	| INT													# IntExpr
 	| STRING												# StrExpr
 	| BOOL													# BoolExpr;
 
-type: 'int' | 'int32' | 'string' | 'bool';
+type: 'int' | 'int32' | 'string' | 'bool' | '*' type;
 
 // --- LEXER ---
 
@@ -67,6 +90,8 @@ ELSE: 'else';
 FOR: 'for';
 BREAK: 'break';
 CONTINUE: 'continue';
+FUNC: 'func';
+RETURN: 'return';
 
 //operadores
 PLUS_ASSIGN: '+=';
@@ -84,7 +109,7 @@ TYPE_BOOL: 'bool';
 BOOL: 'true' | 'false';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 INT: [0-9]+;
-STRING: '"' ~["]* '"';
+STRING: '"' ( '\\' . | ~["\\])* '"';
 
 // Comentarios y Espacios
 COMMENT: '//' ~[\r\n]* -> skip;

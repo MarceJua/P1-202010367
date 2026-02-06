@@ -32,6 +32,25 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitInstruction(Context\InstructionContext $context);
 
 	/**
+	 * Visit a parse tree produced by {@see GolampiParser::block()}.
+	 *
+	 * @param Context\BlockContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitBlock(Context\BlockContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `IfStatement` labeled alternative
+	 * in {@see GolampiParser::ifStmt()}.
+	 *
+	 * @param Context\IfStatementContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitIfStatement(Context\IfStatementContext $context);
+
+	/**
 	 * Visit a parse tree produced by {@see GolampiParser::printStmt()}.
 	 *
 	 * @param Context\PrintStmtContext $context The parse tree.
@@ -70,6 +89,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitExpressionList(Context\ExpressionListContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `AndExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\AndExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitAndExpr(Context\AndExprContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `BoolExpr` labeled alternative
 	 * in {@see GolampiParser::expression()}.
 	 *
@@ -78,16 +107,6 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitBoolExpr(Context\BoolExprContext $context);
-
-	/**
-	 * Visit a parse tree produced by the `MulDivExpr` labeled alternative
-	 * in {@see GolampiParser::expression()}.
-	 *
-	 * @param Context\MulDivExprContext $context The parse tree.
-	 *
-	 * @return mixed The visitor result.
-	 */
-	public function visitMulDivExpr(Context\MulDivExprContext $context);
 
 	/**
 	 * Visit a parse tree produced by the `IdExpr` labeled alternative
@@ -100,6 +119,46 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitIdExpr(Context\IdExprContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `RelExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\RelExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitRelExpr(Context\RelExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `OrExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\OrExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitOrExpr(Context\OrExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `MulDivExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\MulDivExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitMulDivExpr(Context\MulDivExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `EqExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\EqExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitEqExpr(Context\EqExprContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `StrExpr` labeled alternative
 	 * in {@see GolampiParser::expression()}.
 	 *
@@ -108,6 +167,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitStrExpr(Context\StrExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `NotExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\NotExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitNotExpr(Context\NotExprContext $context);
 
 	/**
 	 * Visit a parse tree produced by the `IntExpr` labeled alternative
@@ -138,6 +207,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitAddSubExpr(Context\AddSubExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `UnaryMinusExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\UnaryMinusExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitUnaryMinusExpr(Context\UnaryMinusExprContext $context);
 
 	/**
 	 * Visit a parse tree produced by {@see GolampiParser::type()}.

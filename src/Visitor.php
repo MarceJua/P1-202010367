@@ -122,21 +122,17 @@ class Visitor extends GolampiBaseVisitor
 
     public function visitAddSubExpr($ctx)
     {
-        // Visitamos los dos lados de la operación: (izquierda + derecha)
         $left = $this->visit($ctx->expression(0));
         $right = $this->visit($ctx->expression(1));
         $op = $ctx->op->getText();
 
         if ($op === '+') {
-            // Concatenación de strings (Sección 3.3.6)
             if (is_string($left) || is_string($right)) {
                 return $left . $right;
             }
-            // Suma numérica
             return $left + $right;
         }
 
-        // Resta (Solo permitida para números)
         if ($op === '-') {
             if (!is_numeric($left) || !is_numeric($right)) {
                 throw new \Exception("Error Semántico: No se pueden restar valores no numéricos.");
@@ -147,14 +143,12 @@ class Visitor extends GolampiBaseVisitor
         return null;
     }
 
-    // --- NUEVO: Multiplicación, División y Módulo ---
     public function visitMulDivExpr($ctx)
     {
         $left = $this->visit($ctx->expression(0));
         $right = $this->visit($ctx->expression(1));
         $op = $ctx->op->getText();
 
-        // Validamos que sean números (simplificación inicial)
         if (!is_numeric($left) || !is_numeric($right)) {
             throw new \Exception("Error Semántico: Operación aritmética inválida con tipos no numéricos.");
         }
@@ -164,11 +158,109 @@ class Visitor extends GolampiBaseVisitor
                 return $left * $right;
             case '/':
                 if ($right == 0) throw new \Exception("Error en tiempo de ejecución: División por cero.");
-                return $left / $right; // PHP maneja int/float automáticamente
+                return $left / $right;
             case '%':
                 return $left % $right;
         }
         return null;
+    }
+
+    public function visitBlock($ctx)
+    {
+        $anterior = $this->entorno;
+
+        $this->entorno = new Environment($anterior);
+
+        foreach ($ctx->instruction() as $instruccion) {
+            $this->visit($instruccion);
+        }
+
+        $this->entorno = $anterior;
+        return null;
+    }
+
+    // --- SENTENCIA IF ---
+
+    public function visitIfStatement($ctx)
+    {
+        $condicion = $this->visit($ctx->expression());
+
+        if (!is_bool($condicion)) {
+            throw new \Exception("Error Semántico: La condición del IF debe ser booleana.");
+        }
+
+        if ($condicion === true) {
+            $this->visit($ctx->block(0));
+            return;
+        }
+
+        if ($ctx->ELSE() !== null) {
+
+            if ($ctx->ifStmt() !== null) {
+                $this->visit($ctx->ifStmt());
+            } else {
+                $this->visit($ctx->block(1));
+            }
+        }
+    }
+
+    // --- OPERADORES RELACIONALES (<, >, ==) ---
+
+    public function visitRelExpr($ctx)
+    {
+        $left = $this->visit($ctx->expression(0));
+        $right = $this->visit($ctx->expression(1));
+        $op = $ctx->op->getText();
+
+        if (gettype($left) !== gettype($right) && !is_numeric($left)) {
+            throw new \Exception("Error Semántico: Tipos incompatibles para comparación '$op'.");
+        }
+
+        return match ($op) {
+            '<' => $left < $right,
+            '>' => $left > $right,
+            '<=' => $left <= $right,
+            '>=' => $left >= $right,
+            default => false
+        };
+    }
+
+    public function visitEqExpr($ctx)
+    {
+        $left = $this->visit($ctx->expression(0));
+        $right = $this->visit($ctx->expression(1));
+        $op = $ctx->op->getText();
+
+        return match ($op) {
+            '==' => $left === $right,
+            '!=' => $left !== $right,
+            default => false
+        };
+    }
+
+    // --- OPERADORES LÓGICOS (&&, ||) ---
+
+    public function visitAndExpr($ctx)
+    {
+        $left = $this->visit($ctx->expression(0));
+        // Si el lado izquierdo es falso, NO evaluamos el derecho (Cortocircuito)
+        if ($left === false) return false;
+
+        return $this->visit($ctx->expression(1));
+    }
+
+    public function visitOrExpr($ctx)
+    {
+        $left = $this->visit($ctx->expression(0));
+        // Si el lado izquierdo es verdadero, NO evaluamos el derecho
+        if ($left === true) return true;
+
+        return $this->visit($ctx->expression(1));
+    }
+
+    public function visitNotExpr($ctx)
+    {
+        return !$this->visit($ctx->expression());
     }
 
     // --- Tipos Primitivos ---

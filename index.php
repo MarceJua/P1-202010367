@@ -10,17 +10,29 @@ use App\Visitor; // Importante: Cargar tu Visitor
 
 // Código de prueba Fase 3
 $input = '
-var anioActual int = 2026
-var nacimiento int = 2000
-var edad int = anioActual - nacimiento
+var x int = 10
+var global string = "Soy Global"
 
-fmt.Println("Datos del usuario:")
-fmt.Println("Edad calculada:", edad)
-fmt.Println("En 5 años tendrás:", edad + 5)
+fmt.Println("Inicio del programa. x vale:", x)
 
-// Prueba de re-asignación
-edad = 100
-fmt.Println("Nueva edad:", edad)
+if x > 5 {
+    fmt.Println("Entrando al bloque IF...")
+    var local string = "Soy Local del If"
+    
+    // Mostramos variables
+    fmt.Println(global)
+    fmt.Println(local)
+    
+    // Modificamos variable externa
+    x = 20
+} else {
+    fmt.Println("Esto no debería imprimirse")
+}
+
+fmt.Println("Fuera del IF. x vale:", x)
+
+// Esto debería dar error si descomentas la línea (porque "local" ya no existe):
+ fmt.Println(local)
 ';
 
 $inputStream = InputStream::fromString($input);

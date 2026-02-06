@@ -184,6 +184,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitAssignment(Context\AssignmentContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `ArrayAssignment` labeled alternative
+	 * in {@see GolampiParser::assignStmt()}.
+	 *
+	 * @param Context\ArrayAssignmentContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitArrayAssignment(Context\ArrayAssignmentContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `IncrementDecrement` labeled alternative
 	 * in {@see GolampiParser::assignStmt()}.
 	 *
@@ -250,6 +260,26 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitRelExpr(Context\RelExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ArrayAccessExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\ArrayAccessExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitArrayAccessExpr(Context\ArrayAccessExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ArrayLiteral` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\ArrayLiteralContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitArrayLiteral(Context\ArrayLiteralContext $context);
 
 	/**
 	 * Visit a parse tree produced by the `OrExpr` labeled alternative

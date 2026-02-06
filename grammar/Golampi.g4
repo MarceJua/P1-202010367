@@ -55,8 +55,15 @@ varDecl:
 	'var' ID type ('=' expression)? stmtTerminator # VarDeclaration;
 
 assignStmt:
-	ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression stmtTerminator	# Assignment
-	| ID op = ('++' | '--') stmtTerminator								# IncrementDecrement;
+	ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression stmtTerminator # Assignment
+	| expression '[' expression ']' op = (
+		'='
+		| '+='
+		| '-='
+		| '*='
+		| '/='
+	) expression stmtTerminator				# ArrayAssignment
+	| ID op = ('++' | '--') stmtTerminator	# IncrementDecrement;
 
 stmtTerminator: ';' | NEWLINE | EOF;
 
@@ -71,14 +78,16 @@ expression:
 	| expression op = ('==' | '!=') expression				# EqExpr
 	| expression '&&' expression							# AndExpr
 	| expression '||' expression							# OrExpr
+	| type '{' expressionList? '}'							# ArrayLiteral
 	| ID '(' expressionList? ')'							# CallExpr
+	| expression '[' expression ']'							# ArrayAccessExpr
 	| '(' expression ')'									# ParenExpr
 	| ID													# IdExpr
 	| INT													# IntExpr
 	| STRING												# StrExpr
 	| BOOL													# BoolExpr;
 
-type: 'int' | 'int32' | 'string' | 'bool' | '*' type;
+type: 'int' | 'int32' | 'string' | 'bool' | '[' INT ']' type;
 
 // --- LEXER ---
 

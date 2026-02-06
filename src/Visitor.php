@@ -60,33 +60,115 @@ class Visitor extends GolampiBaseVisitor
     public function visitVarDeclaration($ctx)
     {
         $id = $ctx->ID()->getText();
-        $tipo = $ctx->type()->getText();
+        $tipoStr = $ctx->type()->getText(); // Ej: "[3]int" o "int"
 
         $valor = null;
         if ($ctx->expression() !== null) {
             $valor = $this->visit($ctx->expression());
         } else {
-            // Valores por defecto...
-            $valor = match ($tipo) {
-                'int', 'int32' => 0,
-                'string' => "",
-                'bool' => false,
-                default => null
-            };
+
+            if (str_starts_with($tipoStr, '[')) {
+                // Parsear dimensión y subtipo: [5]int
+                if (preg_match('/^\[(\d+)\](.+)$/', $tipoStr, $matches)) {
+                    $size = intval($matches[1]);
+                    $subType = $matches[2];
+                    $valor = new GolampiArray($size, $subType);
+                }
+            } else {
+                // Tipos primitivos normales
+                $valor = match ($tipoStr) {
+                    'int', 'int32' => 0,
+                    'string' => "",
+                    'bool' => false,
+                    default => null
+                };
+            }
         }
 
-        // --- VALIDACIÓN DE SEGURIDAD ---
+        // Validación de seguridad (Funciones)
         if ($valor instanceof FunctionDef) {
-            echo "[ERROR SEMÁNTICO] No puedes asignar la función '$id' a una variable. ¿Olvidaste los paréntesis '()' en la llamada?\n";
+            echo "[ERROR] No puedes asignar funciones a variables.\n";
             return;
         }
-        // -------------------------------
 
         try {
-            $this->entorno->declarar($id, $valor, $tipo);
+            $this->entorno->declarar($id, $valor, $tipoStr);
         } catch (\Exception $e) {
             echo "Error: " . $e->getMessage() . "\n";
         }
+    }
+
+    public function visitArrayLiteral($ctx)
+    {
+        $tipoStr = $ctx->type()->getText(); // [3]int
+
+        // Parsear tamaño y tipo
+        if (!preg_match('/^\[(\d+)\](.+)$/', $tipoStr, $matches)) {
+            throw new \Exception("Error Sintáctico: Formato de array inválido.");
+        }
+        $size = intval($matches[1]);
+        $subType = $matches[2];
+
+        // Recolectar valores
+        $valores = [];
+        if ($ctx->expressionList() !== null) {
+            foreach ($ctx->expressionList()->expression() as $expr) {
+                $valores[] = $this->visit($expr);
+            }
+        }
+
+        if (count($valores) > $size) {
+            throw new \Exception("Error Semántico: Demasiados elementos para un array de tamaño $size.");
+        }
+
+        return new GolampiArray($size, $subType, $valores);
+    }
+
+    public function visitArrayAccessExpr($ctx)
+    {
+        // 1. Evaluar la parte izquierda (el array)
+        $arreglo = $this->visit($ctx->expression(0));
+        // 2. Evaluar el índice
+        $indice = $this->visit($ctx->expression(1));
+
+        if (!($arreglo instanceof GolampiArray)) {
+            throw new \Exception("Error Semántico: Intentando indexar algo que no es un array.");
+        }
+        if (!is_int($indice)) {
+            throw new \Exception("Error Semántico: El índice debe ser entero.");
+        }
+
+        return $arreglo->get($indice);
+    }
+
+    public function visitArrayAssignment($ctx)
+    {
+        // Estructura: expression[0] '[' expression[1] ']' = expression[2]
+
+        // 1. Obtener el array (objeto)
+        $arreglo = $this->visit($ctx->expression(0));
+
+        // 2. Obtener índice y valor
+        $indice = $this->visit($ctx->expression(1));
+        $nuevoValor = $this->visit($ctx->expression(2));
+        $op = $ctx->op->getText();
+
+        if (!($arreglo instanceof GolampiArray)) {
+            throw new \Exception("Error Semántico: Asignación inválida en no-array.");
+        }
+
+        // Manejo de operadores (+=, =, etc)
+        $valorActual = $arreglo->get($indice);
+
+        $valorFinal = match ($op) {
+            '=' => $nuevoValor,
+            '+=' => $valorActual + $nuevoValor,
+            '-=' => $valorActual - $nuevoValor,
+            default => $nuevoValor
+        };
+
+        // Guardar cambio (Como es un objeto, se actualiza por referencia automáticamente)
+        $arreglo->set($indice, $valorFinal);
     }
 
     // --- Asignación ---
@@ -365,8 +447,8 @@ class Visitor extends GolampiBaseVisitor
             if (is_string($valor)) {
                 return strlen($valor); // Cuenta bytes (estándar en Go/C)
             }
-            if (is_array($valor)) {
-                return count($valor);
+            if ($valor instanceof GolampiArray) {
+                return $valor->size;
             }
             throw new \Exception("Error Semántico: 'len' no soporta este tipo de dato.");
         }
@@ -377,6 +459,10 @@ class Visitor extends GolampiBaseVisitor
             }
 
             $valor = $this->visit($ctx->expressionList()->expression(0));
+
+            if ($valor instanceof GolampiArray) {
+                return "array"; // O si prefieres algo más pro: "[]" . $valor->subType;
+            }
 
             // Mapeo exacto a tipos de Golampi
             return match (gettype($valor)) {

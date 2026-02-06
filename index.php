@@ -13,28 +13,26 @@ use App\Compiler\GolampiParser;
 use App\Visitor;
 
 $input = '
-fmt.Println(">>> TEST DE CADENAS Y TIPOS <<<")
+fmt.Println(">>> TEST ARRAYS <<<")
 
-// 1. Prueba de Escape Sequences
-fmt.Println("Línea 1\nLínea 2 con\ttabulación y \"comillas\" ")
+// 1. Declaración vacía
+var vacio [3]int
+fmt.Println("Posición 0 de vacio:", vacio[0])
 
-// 2. Prueba de Substr y Len corregidos
-var texto string = "Golampi 2026"
-// Ahora len debería ser 12 (sin comillas)
-fmt.Println("Texto:", texto)
-fmt.Println("Longitud real:", len(texto)) 
+// 2. Asignación
+vacio[0] = 50
+vacio[1] = 100
+fmt.Println("Posición 0 modificada:", vacio[0])
+fmt.Println("Posición 1 modificada:", vacio[1])
 
-// Substr(0, 7) de "Golampi 2026" debería ser "Golampi" (7 chars)
-fmt.Println("Substr(0,7):", substr(texto, 0, 7))
+// 3. Literal
+var numeros [3]int = [3]int{1, 2, 3}
+fmt.Println("Array literal pos 2:", numeros[2])
 
-// 3. Prueba de TypeOf
-var entero int = 100
-var cadena string = "Hola"
-var booleano bool = true
-
-fmt.Println("Tipo de entero:", typeof(entero))
-fmt.Println("Tipo de cadena:", typeof(cadena))
-fmt.Println("Tipo de bool:", typeof(booleano))
+// 4. Función len() con arrays
+// Nota: Tu Visitor nativo len() debe detectar si es instancia de GolampiArray
+var tamano int = len(numeros)
+fmt.Println("Tamaño del array:", tamano)
 ';
 
 try {

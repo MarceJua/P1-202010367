@@ -2,43 +2,57 @@ grammar Golampi;
 
 // --- PARSER (Reglas Sintácticas) ---
 
-// El archivo debe tener al menos una instrucción o estar vacío
 file: instruction* EOF;
 
 instruction:
 	printStmt
-	; // Aquí iremos agregando if, for, declaraciones, etc.
+	| varDecl // Nueva regla: Declaración (var x int = 10)
+	| assignStmt; // Nueva regla: Asignación (x = 20)
 
 printStmt: 'fmt.Println' '(' expressionList? ')' stmtTerminator;
 
+// Declaración estándar: var x int = 10;
+varDecl:
+	'var' ID type ('=' expression)? stmtTerminator # VarDeclaration;
+
+// Asignación: x = 10;
+assignStmt: ID '=' expression stmtTerminator # Assignment;
+
 expressionList: expression (',' expression)*;
 
-expression: ID # IdExpr | INT # IntExpr | STRING # StrExpr;
+expression:
+	expression op = ('*' | '/' | '%') expression	# MulDivExpr
+	| expression op = ('+' | '-') expression		# AddSubExpr
+	| '(' expression ')'							# ParenExpr
+	| ID											# IdExpr
+	| INT											# IntExpr
+	| STRING										# StrExpr
+	| BOOL											# BoolExpr;
+
+type: 'int' | 'int32' | 'string' | 'bool';
 
 stmtTerminator: ';' | NEWLINE | EOF;
 
-// --- LEXER (Reglas Léxicas - Generalidades Sección 3.2) ---
+// --- LEXER ---
 
-// Palabras Reservadas (Case Sensitive)
+// Palabras reservadas
 VAR: 'var';
-INT_TYPE: 'int32';
 FMT: 'fmt.Println';
 
-// Identificadores (Sección 3.2.1) Debe iniciar con letra o guion bajo, seguido de letras, dígitos o
-// guion bajo.
+// Tipos
+TYPE_INT: 'int' | 'int32';
+TYPE_STRING: 'string';
+TYPE_BOOL: 'bool';
+
+// Valores booleanos
+BOOL: 'true' | 'false';
+
+// Identificadores y Valores
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
-
-// Tipos de Datos (Sección 3.2.3)
 INT: [0-9]+;
-STRING: '"' ~["]* '"'; // Soporte básico de strings
+STRING: '"' ~["]* '"';
 
-// Comentarios (Sección 3.2.2) - Se ignoran (skip)
+// Comentarios y Espacios
 COMMENT: '//' ~[\r\n]* -> skip;
-
-BLOCK_COMMENT: '/*' .*? '*/' -> skip;
-
-// Espacios en blanco - Se ignoran
 WS: [ \t]+ -> skip;
-
-// Manejo de nuevas líneas (importante para "semicolon insertion" de Go, aunque aquí simplificamos)
 NEWLINE: [\r\n]+;

@@ -6,11 +6,21 @@ use Antlr\Antlr4\Runtime\InputStream;
 use Antlr\Antlr4\Runtime\CommonTokenStream;
 use App\Compiler\GolampiLexer;
 use App\Compiler\GolampiParser;
+use App\Visitor; // Importante: Cargar tu Visitor
 
-// Código de prueba "Hardcoded" para probar Fase 1
+// Código de prueba Fase 3
 $input = '
-// Comentario de prueba
-fmt.Println("Hola Mundo", 2026)
+var anioActual int = 2026
+var nacimiento int = 2000
+var edad int = anioActual - nacimiento
+
+fmt.Println("Datos del usuario:")
+fmt.Println("Edad calculada:", edad)
+fmt.Println("En 5 años tendrás:", edad + 5)
+
+// Prueba de re-asignación
+edad = 100
+fmt.Println("Nueva edad:", edad)
 ';
 
 $inputStream = InputStream::fromString($input);
@@ -18,8 +28,7 @@ $lexer = new GolampiLexer($inputStream);
 $tokens = new CommonTokenStream($lexer);
 $parser = new GolampiParser($tokens);
 
-// Intentar parsear con la regla inicial
+// Construir el árbol
 $tree = $parser->file();
-
-echo "¡Análisis completado sin errores fatales!\n";
-echo "Árbol: " . $tree->toStringTree($parser->getRuleNames()) . "\n";
+$visitor = new Visitor();
+$visitor->visit($tree);

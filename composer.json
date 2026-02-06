@@ -8,5 +8,13 @@
         "psr-4": {
             "App\\": "src/"
         }
+    },
+    "scripts": {
+        "compile": [
+            "java -jar antlr-4.13.1-complete.jar -Dlanguage=PHP -visitor -no-listener -package App\\\\Compiler -o src/Compiler grammar/Golampi.g4",
+            "mv src/Compiler/grammar/* src/Compiler/ 2>/dev/null || true",
+            "rmdir src/Compiler/grammar 2>/dev/null || true"
+        ],
+        "start": "php index.php"
     }
 }

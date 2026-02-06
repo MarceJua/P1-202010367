@@ -13,26 +13,37 @@ use App\Compiler\GolampiParser;
 use App\Visitor;
 
 $input = '
-fmt.Println(">>> TEST ARRAYS <<<")
+fmt.Println(">>> TEST ARRAY MULTIDIMENSIONAL Y FOR <<<")
 
-// 1. Declaración vacía
-var vacio [3]int
-fmt.Println("Posición 0 de vacio:", vacio[0])
+// 1. Declaración de matriz (se inicializa con ceros recursivamente)
+var matrix [3][3]int
 
-// 2. Asignación
-vacio[0] = 50
-vacio[1] = 100
-fmt.Println("Posición 0 modificada:", vacio[0])
-fmt.Println("Posición 1 modificada:", vacio[1])
+// 2. Llenado usando FOR anidado (Ciclos + Arreglos)
+fmt.Println("Llenando matriz...")
+for var i int = 0; i < len(matrix); i++ {
+    for var j int = 0; j < len(matrix[0]); j++ {
+        // Asignamos valor: fila + columna
+        matrix[i][j] = i + j
+    }
+}
 
-// 3. Literal
-var numeros [3]int = [3]int{1, 2, 3}
-fmt.Println("Array literal pos 2:", numeros[2])
+// 3. Imprimir diagonal principal
+fmt.Println("Diagonal Principal:")
+for var k int = 0; k < 3; k++ {
+    fmt.Println("matrix[", k, "][", k, "] =", matrix[k][k])
+}
 
-// 4. Función len() con arrays
-// Nota: Tu Visitor nativo len() debe detectar si es instancia de GolampiArray
-var tamano int = len(numeros)
-fmt.Println("Tamaño del array:", tamano)
+// 4. Prueba de acceso directo
+matrix[0][2] = 99
+fmt.Println("Valor modificado en [0][2]:", matrix[0][2])
+
+// 5. Array Literal Anidado (Opcional, si tu parser de literal ya lo soporta)
+// Nota: La gramática actual requiere el tipo explícito en cada nivel
+var vector [2][2]int = [2][2]int{ 
+    [2]int{10, 20}, 
+    [2]int{30, 40} 
+}
+fmt.Println("Literal anidado [1][0]:", vector[1][0])
 ';
 
 try {

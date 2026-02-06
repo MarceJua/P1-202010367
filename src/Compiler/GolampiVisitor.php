@@ -137,6 +137,36 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitForInfinite(Context\ForInfiniteContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `SwitchStatement` labeled alternative
+	 * in {@see GolampiParser::switchStmt()}.
+	 *
+	 * @param Context\SwitchStatementContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitSwitchStatement(Context\SwitchStatementContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `CaseBlock` labeled alternative
+	 * in {@see GolampiParser::switchCase()}.
+	 *
+	 * @param Context\CaseBlockContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitCaseBlock(Context\CaseBlockContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `DefaultBlock` labeled alternative
+	 * in {@see GolampiParser::switchCase()}.
+	 *
+	 * @param Context\DefaultBlockContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitDefaultBlock(Context\DefaultBlockContext $context);
+
+	/**
 	 * Visit a parse tree produced by {@see GolampiParser::breakStmt()}.
 	 *
 	 * @param Context\BreakStmtContext $context The parse tree.
@@ -172,6 +202,26 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitVarDeclaration(Context\VarDeclarationContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ConstDeclaration` labeled alternative
+	 * in {@see GolampiParser::constDecl()}.
+	 *
+	 * @param Context\ConstDeclarationContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitConstDeclaration(Context\ConstDeclarationContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `PtrAssignment` labeled alternative
+	 * in {@see GolampiParser::assignStmt()}.
+	 *
+	 * @param Context\PtrAssignmentContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitPtrAssignment(Context\PtrAssignmentContext $context);
 
 	/**
 	 * Visit a parse tree produced by the `Assignment` labeled alternative
@@ -242,6 +292,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitBoolExpr(Context\BoolExprContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `FloatExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\FloatExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitFloatExpr(Context\FloatExprContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `IdExpr` labeled alternative
 	 * in {@see GolampiParser::expression()}.
 	 *
@@ -250,6 +310,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitIdExpr(Context\IdExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `DerefExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\DerefExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitDerefExpr(Context\DerefExprContext $context);
 
 	/**
 	 * Visit a parse tree produced by the `RelExpr` labeled alternative
@@ -300,6 +370,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	 * @return mixed The visitor result.
 	 */
 	public function visitMulDivExpr(Context\MulDivExprContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `AddressOfExpr` labeled alternative
+	 * in {@see GolampiParser::expression()}.
+	 *
+	 * @param Context\AddressOfExprContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitAddressOfExpr(Context\AddressOfExprContext $context);
 
 	/**
 	 * Visit a parse tree produced by the `EqExpr` labeled alternative

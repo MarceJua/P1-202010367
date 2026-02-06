@@ -22,10 +22,37 @@ class Visitor extends GolampiBaseVisitor
      */
     public function visitFile($ctx)
     {
-        // Visitamos todos los hijos
+        // 1. Primera Pasada: Registrar todas las funciones y variables globales
         foreach ($ctx->children as $child) {
             $this->visit($child);
         }
+
+        // 2. Ejecución Automática de 'main'
+        try {
+            // Buscamos si existe la función 'main' en el entorno global
+            $mainData = $this->entorno->obtener('main');
+            $funcionMain = $mainData['valor'];
+
+            if ($funcionMain instanceof FunctionDef) {
+                // Preparamos el entorno para main (Hijo del Global)
+                $envAnterior = $this->entorno;
+                $this->entorno = new Environment($envAnterior);
+
+                // Ejecutamos el cuerpo de main
+                try {
+                    $this->visit($funcionMain->block);
+                } catch (ReturnException $e) {
+                    // Si main tiene un return, simplemente termina
+                }
+
+                // Restauramos el entorno
+                $this->entorno = $envAnterior;
+            }
+        } catch (\Exception $e) {
+            // Si no se encuentra 'main', lanzamos el error obligatorio según enunciado
+            echo "\n[ADVERTENCIA] No se encontró la función 'main'. Asegúrate de definirla.\n";
+        }
+
         return null;
     }
 
@@ -563,6 +590,118 @@ class Visitor extends GolampiBaseVisitor
         return $retorno;
     }
 
+    // --- PUNTEROS ---
+
+    public function visitAddressOfExpr($ctx)
+    {
+        $id = $ctx->ID()->getText();
+
+        // Verificamos que la variable exista
+        $var = $this->entorno->obtener($id);
+
+        // Retornamos una referencia que "apunta" a esta variable en este entorno
+        // El tipo del puntero será "*" + tipo_original (ej: "*int")
+        return new Reference($this->entorno, $id, $var['tipo']);
+    }
+
+    public function visitDerefExpr($ctx)
+    {
+        // Evaluamos la expresión (debe retornar un objeto Reference)
+        $ref = $this->visit($ctx->expression());
+
+        if (!($ref instanceof Reference)) {
+            throw new \Exception("Error Semántico: Se intentó desreferenciar algo que no es un puntero.");
+        }
+
+        return $ref->dereference();
+    }
+
+    public function visitPtrAssignment($ctx)
+    {
+        $id = $ctx->ID()->getText();
+        $nuevoValor = $this->visit($ctx->expression());
+
+        // 1. Obtenemos la variable 'p' (que debe ser un Reference)
+        $ptr = $this->entorno->obtener($id)['valor'];
+
+        if (!($ptr instanceof Reference)) {
+            throw new \Exception("Error Semántico: La variable '$id' no es un puntero.");
+        }
+
+        // 2. Modificamos el valor al que apunta
+        $ptr->assign($nuevoValor);
+    }
+
+    public function visitConstDeclaration($ctx)
+    {
+        $id = $ctx->ID()->getText();
+        $tipo = $ctx->type()->getText();
+
+        // Las constantes SIEMPRE tienen valor inicial
+        $valor = $this->visit($ctx->expression());
+
+        // Validar tipos básicos (opcional pero recomendado)
+        // ...
+
+        // Declarar como TRUE (es constante)
+        $this->entorno->declarar($id, $valor, $tipo, true);
+    }
+
+    // --- SWITCH ---
+    public function visitSwitchStatement($ctx)
+    {
+        // 1. Evaluar la expresión principal (ej: switch opcion)
+        $valorSwitch = $this->visit($ctx->expression());
+
+        // 2. PRIMER BARRIDO: Ejecutar solamente los 'case'
+        foreach ($ctx->switchCase() as $caseCtx) {
+
+            // Si es un bloque DEFAULT, lo saltamos por ahora
+            if ($caseCtx instanceof \App\Compiler\Context\DefaultBlockContext) {
+                continue;
+            }
+
+            // Si llegamos aquí, ES UN CASE.
+            // Evaluamos la lista de expresiones (ej: case 1, 2:)
+            $listaExprs = $caseCtx->expressionList()->expression();
+            foreach ($listaExprs as $exprNode) {
+                $valCase = $this->visit($exprNode);
+
+                // Comparamos
+                if ($valCase == $valorSwitch) {
+                    $this->ejecutarInstruccionesDeCase($caseCtx->instruction());
+                    return; // Terminamos el switch (break implícito)
+                }
+            }
+        }
+
+        // 3. SEGUNDO BARRIDO: Ejecutar el 'default' si no hubo coincidencias
+        foreach ($ctx->switchCase() as $caseCtx) {
+            if ($caseCtx instanceof \App\Compiler\Context\DefaultBlockContext) {
+                $this->ejecutarInstruccionesDeCase($caseCtx->instruction());
+                return;
+            }
+        }
+    }
+
+    private function ejecutarInstruccionesDeCase($instrucciones)
+    {
+        // Opcional: Crear un scope nuevo si se requiere que las variables del case sean locales
+        // $anterior = $this->entorno;
+        // $this->entorno = new Environment($anterior);
+
+        foreach ($instrucciones as $inst) {
+            try {
+                $this->visit($inst);
+            } catch (BreakException $e) {
+                // Break explícito dentro del case termina el switch
+                return;
+            }
+        }
+
+        // $this->entorno = $anterior;
+    }
+
     // Método auxiliar para exprStmt (llamada sin uso de valor)
     public function visitExprStmt($ctx)
     {
@@ -634,5 +773,10 @@ class Visitor extends GolampiBaseVisitor
     public function visitParenExpr($ctx)
     {
         return $this->visit($ctx->expression());
+    }
+
+    public function visitFloatExpr($ctx)
+    {
+        return floatval($ctx->getText());
     }
 }

@@ -8,8 +8,10 @@ instruction:
 	funcDecl
 	| printStmt
 	| varDecl
+	| constDecl
 	| assignStmt
 	| ifStmt
+	| switchStmt
 	| forStmt
 	| breakStmt
 	| continueStmt
@@ -46,6 +48,13 @@ forStmt:
 	| 'for' expression block						# ForWhile
 	| 'for' block									# ForInfinite;
 
+switchStmt:
+	'switch' expression '{' switchCase* '}' # SwitchStatement;
+
+switchCase:
+	'case' expressionList ':' instruction*	# CaseBlock
+	| 'default' ':' instruction*			# DefaultBlock;
+
 breakStmt: 'break' stmtTerminator;
 continueStmt: 'continue' stmtTerminator;
 
@@ -54,8 +63,12 @@ printStmt: 'fmt.Println' '(' expressionList? ')' stmtTerminator;
 varDecl:
 	'var' ID type ('=' expression)? stmtTerminator # VarDeclaration;
 
+constDecl:
+	'const' ID type '=' expression stmtTerminator # ConstDeclaration;
+
 assignStmt:
-	ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression stmtTerminator # Assignment
+	'*' ID '=' expression stmtTerminator									# PtrAssignment
+	| ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression stmtTerminator	# Assignment
 	| expression '[' expression ']' op = (
 		'='
 		| '+='
@@ -72,6 +85,8 @@ expressionList: expression (',' expression)*;
 expression:
 	'!' expression											# NotExpr
 	| '-' expression										# UnaryMinusExpr
+	| '&' ID												# AddressOfExpr
+	| '*' expression										# DerefExpr
 	| expression op = ('*' | '/' | '%') expression			# MulDivExpr
 	| expression op = ('+' | '-') expression				# AddSubExpr
 	| expression op = ('<' | '<=' | '>' | '>=') expression	# RelExpr
@@ -83,6 +98,7 @@ expression:
 	| expression '[' expression ']'							# ArrayAccessExpr
 	| '(' expression ')'									# ParenExpr
 	| ID													# IdExpr
+	| FLOAT													# FloatExpr
 	| INT													# IntExpr
 	| STRING												# StrExpr
 	| BOOL													# BoolExpr;
@@ -101,6 +117,10 @@ BREAK: 'break';
 CONTINUE: 'continue';
 FUNC: 'func';
 RETURN: 'return';
+CONST: 'const';
+SWITCH: 'switch';
+CASE: 'case';
+DEFAULT: 'default';
 
 //operadores
 PLUS_ASSIGN: '+=';
@@ -117,6 +137,7 @@ TYPE_BOOL: 'bool';
 
 BOOL: 'true' | 'false';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
+FLOAT: [0-9]+ '.' [0-9]+;
 INT: [0-9]+;
 STRING: '"' ( '\\' . | ~["\\])* '"';
 

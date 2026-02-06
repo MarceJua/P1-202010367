@@ -1,0 +1,8 @@
+/vendor/
+.DS_Store
+Thumbs.db
+.env
+.idea/
+.vscode/
+antlr-*.jar
+*.log

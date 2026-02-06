@@ -1,0 +1,12 @@
+{
+    "name": "marcelo/golampi-interpreter",
+    "description": "Intérprete para lenguaje Golampi - OLC2",
+    "require": {
+        "antlr/antlr4-php-runtime": "^0.9.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}

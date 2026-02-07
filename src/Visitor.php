@@ -12,7 +12,7 @@ class Visitor extends GolampiBaseVisitor
 
     public function __construct()
     {
-        $this->entorno = new Environment(null);
+        $this->entorno = new Environment(null, "Global");
         $this->globalEnv = $this->entorno;
     }
 
@@ -120,7 +120,7 @@ class Visitor extends GolampiBaseVisitor
         }
 
         try {
-            $this->entorno->declarar($id, $valor, $tipoStr);
+            $this->entorno->declarar($id, $valor, $tipoStr, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
         } catch (\Exception $e) {
             echo "Error: " . $e->getMessage() . "\n";
         }
@@ -243,7 +243,7 @@ class Visitor extends GolampiBaseVisitor
     {
         // 1. Crear entorno para el ciclo (el 'var i = 0' vive aquí)
         $anterior = $this->entorno;
-        $this->entorno = new Environment($anterior);
+        $this->entorno = new Environment($anterior, "for loop");
 
         // 2. Ejecutar Inicialización (var i int = 0)
         $this->visit($ctx->varDecl());
@@ -349,7 +349,7 @@ class Visitor extends GolampiBaseVisitor
     {
         $anterior = $this->entorno;
 
-        $this->entorno = new Environment($anterior);
+        $this->entorno = new Environment($anterior, "block");
 
         foreach ($ctx->instruction() as $instruccion) {
             $this->visit($instruccion);
@@ -443,7 +443,7 @@ class Visitor extends GolampiBaseVisitor
 
         // 3. Guardar la definición en el entorno actual (debería ser el global)
         $funcion = new FunctionDef($params, $ctx->block(), $returnType);
-        $this->entorno->declarar($id, $funcion, "function");
+        $this->entorno->declarar($id, $funcion, "func", $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
     }
 
     public function visitReturnStmt($ctx)
@@ -577,13 +577,12 @@ class Visitor extends GolampiBaseVisitor
 
         // Preparar entorno nuevo (Global como padre)
         $envGlobal = $this->getGlobalEnv();
-        $envFuncion = new Environment($envGlobal);
-
+        $envFuncion = new Environment($envGlobal, "func " . $nombreFuncion);
         // Asignar parámetros
         for ($i = 0; $i < count($argumentos); $i++) {
             $paramNombre = $funcion->params[$i]['id'];
             $paramTipo = $funcion->params[$i]['tipo'];
-            $envFuncion->declarar($paramNombre, $argumentos[$i], $paramTipo);
+            $envFuncion->declarar($paramNombre, $argumentos[$i], $paramTipo, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
         }
 
         // Ejecutar
@@ -656,7 +655,7 @@ class Visitor extends GolampiBaseVisitor
         // ...
 
         // Declarar como TRUE (es constante)
-        $this->entorno->declarar($id, $valor, $tipo, true);
+        $this->entorno->declarar($id, $valor, $tipo, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine(), true);
     }
 
     // --- SWITCH ---
@@ -763,7 +762,7 @@ class Visitor extends GolampiBaseVisitor
 
             // Intentamos declarar. Si falla porque existe, intentamos asignar.
             try {
-                $this->entorno->declarar($id, $val, $tipo);
+                $this->entorno->declarar($id, $val, $tipo, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
                 $algunaNueva = true;
             } catch (\Exception $e) {
                 // Ya existe, asignamos

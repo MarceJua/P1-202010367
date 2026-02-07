@@ -4,33 +4,55 @@ namespace App;
 
 class Environment
 {
-    // Tabla ahora guarda: ['valor' => X, 'tipo' => Y, 'const' => true/false]
     private array $tabla = [];
     private ?Environment $anterior;
+    public string $nombreAmbito;
 
-    public function __construct(?Environment $anterior = null)
+    // --- REPORTE ESTÁTICO (Aquí se guardará todo el historial) ---
+    public static array $reporte = [];
+
+    public function __construct(?Environment $anterior = null, string $nombre = "Global")
     {
         $this->anterior = $anterior;
+        $this->nombreAmbito = $nombre;
     }
 
-    public function declarar(string $id, $valor, string $tipo, bool $isConst = false): void
+    // Actualizamos declarar para recibir línea y columna
+    public function declarar(string $id, $valor, string $tipo, int $linea, int $col, bool $isConst = false): void
     {
         if (isset($this->tabla[$id])) {
-            throw new \Exception("Error Semántico: La variable '$id' ya existe en este ámbito.");
+            throw new \Exception("Error Semántico: La variable '$id' ya existe en el ámbito '{$this->nombreAmbito}'.");
         }
 
         $this->tabla[$id] = [
             'valor' => $valor,
             'tipo'  => $tipo,
-            'const' => $isConst // Guardamos si es constante
+            'const' => $isConst
+        ];
+
+        // --- GUARDAR EN REPORTE ---
+        $valStr = "null";
+        if ($valor !== null) {
+            if (is_bool($valor)) $valStr = $valor ? "true" : "false";
+            elseif ($valor instanceof GolampiArray) $valStr = "Array[" . $valor->size . "]";
+            elseif ($valor instanceof FunctionDef) $valStr = "Function";
+            elseif (is_array($valor)) $valStr = "List"; // Para retornos múltiples temporales
+            else $valStr = (string)$valor;
+        }
+
+        self::$reporte[] = [
+            'id' => $id,
+            'tipo' => $isConst ? "const $tipo" : $tipo,
+            'ambito' => $this->nombreAmbito,
+            'valor' => $valStr,
+            'linea' => $linea,
+            'columna' => $col
         ];
     }
 
     public function asignar(string $id, $valor): void
     {
-        // 1. Buscamos en el entorno actual
         if (isset($this->tabla[$id])) {
-            // Verificar si es constante
             if ($this->tabla[$id]['const']) {
                 throw new \Exception("Error Semántico: No se puede modificar la constante '$id'.");
             }
@@ -38,7 +60,6 @@ class Environment
             return;
         }
 
-        // 2. Si no está aquí, buscamos en el entorno padre
         if ($this->anterior !== null) {
             $this->anterior->asignar($id, $valor);
             return;
@@ -58,5 +79,11 @@ class Environment
         }
 
         throw new \Exception("Error Semántico: Variable '$id' no encontrada.");
+    }
+
+    // Método para limpiar el reporte entre ejecuciones (útil para la GUI)
+    public static function limpiarReporte()
+    {
+        self::$reporte = [];
     }
 }

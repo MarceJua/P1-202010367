@@ -72,6 +72,23 @@ try {
 
     $visitor = new Visitor();
     $visitor->visit($tree);
+
+    // --- IMPRIMIR REPORTE DE SÍMBOLOS ---
+    echo "\n\n=== REPORTE DE TABLA DE SÍMBOLOS ===\n";
+    printf("%-15s | %-15s | %-15s | %-20s | %s\n", "ID", "TIPO", "AMBITO", "VALOR", "POS");
+    echo str_repeat("-", 80) . "\n";
+
+    foreach (\App\Environment::$reporte as $row) {
+        printf(
+            "%-15s | %-15s | %-15s | %-20s | %d:%d\n",
+            $row['id'],
+            substr($row['tipo'], 0, 15),
+            substr($row['ambito'], 0, 15),
+            substr($row['valor'], 0, 20),
+            $row['linea'],
+            $row['columna']
+        );
+    }
 } catch (\Throwable $e) {
     echo "\n ERROR EN EJECUCIÓN:\n" . $e->getMessage() . "\n";
 }

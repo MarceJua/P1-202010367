@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golampi IDE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>⚡ Golampi Compiler</h1>
+    <span style="font-size: 0.9rem; color: #888">202010367</span>
+</header>
+
+<div class="toolbar">
+    <button onclick="compilar()">▶ EJECUTAR</button>
+    <button class="secondary" onclick="limpiar()">Limpiar</button>
+</div>
+
+<div class="main-container">
+    <div class="editor-container">
+        <textarea id="code" spellcheck="false" placeholder="// Escribe tu código Golampi aquí...">
+func main() {
+    fmt.Println("¡Bienvenido a Golampi Web!")
+    var a int = 10
+    var b int = 20
+    fmt.Println("Suma:", a + b)
+}</textarea>
+    </div>
+
+    <div class="output-container">
+        <div class="tabs">
+            <div id="btn-console" class="tab active" onclick="switchTab('console')">Consola</div>
+            <div id="btn-symbols" class="tab" onclick="switchTab('symbols')">Símbolos</div>
+            <div id="btn-errors" class="tab" onclick="switchTab('errors')">Errores</div>
+        </div>
+
+        <div id="tab-console" class="tab-content active">
+            <pre id="console">// Esperando ejecución...</pre>
+        </div>
+
+        <div id="tab-symbols" class="tab-content">
+            <table id="symbols-table">
+                <thead><tr><th>ID</th><th>Tipo</th><th>Ámbito</th><th>Valor</th><th>Pos</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="tab-errors" class="tab-content">
+            <table id="errors-table">
+                <thead><tr><th>Tipo</th><th>Descripción</th><th>Línea</th><th>Columna</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

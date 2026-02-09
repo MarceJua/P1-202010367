@@ -1,0 +1,47 @@
+:root {
+    --bg-dark: #1e1e1e;
+    --bg-panel: #252526;
+    --accent: #007acc;
+    --text: #d4d4d4;
+    --border: #3e3e42;
+    --red: #f14c4c;
+    --yellow: #cca700;
+}
+body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+
+header { background: #333; padding: 10px 20px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); }
+h1 { margin: 0; font-size: 1.2rem; color: #fff; }
+
+.toolbar { padding: 10px; background: var(--bg-panel); display: flex; gap: 10px; }
+button { background: var(--accent); color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 3px; font-weight: bold; }
+button:hover { opacity: 0.9; }
+button.secondary { background: #444; }
+
+.main-container { display: flex; flex: 1; overflow: hidden; }
+
+/* Editor */
+.editor-container { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+textarea#code { flex: 1; background: var(--bg-dark); color: #9cdcfe; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; resize: none; outline: none; }
+
+/* Panel de Salida */
+.output-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-panel); }
+
+.tabs { display: flex; background: #2d2d2d; }
+.tab { padding: 10px 20px; cursor: pointer; background: #2d2d2d; border-right: 1px solid var(--border); border-top: 2px solid transparent; color: #888; }
+.tab:hover { color: #fff; }
+.tab.active { background: var(--bg-panel); border-top-color: var(--accent); color: #fff; }
+
+.tab-content { flex: 1; padding: 0; overflow: auto; display: none; }
+.tab-content.active { display: block; }
+
+pre#console { margin: 0; padding: 15px; font-family: 'Consolas', monospace; white-space: pre-wrap; }
+
+/* Tablas */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+th { background: #333; position: sticky; top: 0; }
+tr:hover { background: #2a2d2e; }
+
+.error-lex { color: #f48771; border-left: 3px solid #f48771; }
+.error-syn { color: var(--yellow); border-left: 3px solid var(--yellow); }
+.error-sem { color: var(--red); border-left: 3px solid var(--red); }

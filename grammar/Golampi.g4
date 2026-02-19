@@ -10,7 +10,7 @@ instruction:
 	| varDecl
 	| constDecl
 	| shortVarDecl
-	| assignStmt
+	| assignStmt stmtTerminator
 	| ifStmt
 	| switchStmt
 	| forStmt
@@ -73,16 +73,16 @@ shortVarDecl:
 idList: ID (',' ID)*;
 
 assignStmt:
-	'*' ID '=' expression stmtTerminator									# PtrAssignment
-	| ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression stmtTerminator	# Assignment
+	'*' ID '=' expression									# PtrAssignment
+	| ID op = ('=' | '+=' | '-=' | '*=' | '/=') expression	# Assignment
 	| expression '[' expression ']' op = (
 		'='
 		| '+='
 		| '-='
 		| '*='
 		| '/='
-	) expression stmtTerminator				# ArrayAssignment
-	| ID op = ('++' | '--') stmtTerminator	# IncrementDecrement;
+	) expression			# ArrayAssignment
+	| ID op = ('++' | '--')	# IncrementDecrement;
 
 stmtTerminator: ';' | NEWLINE | EOF;
 

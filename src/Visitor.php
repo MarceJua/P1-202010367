@@ -551,9 +551,18 @@ class Visitor extends GolampiBaseVisitor
         $l = $this->visit($ctx->expression(0));
         $r = $this->visit($ctx->expression(1));
         $op = $ctx->op->getText();
-        if ($op == '*') return $l * $r;
-        if ($op == '/') return $l / $r;
-        return $l % $r;
+
+        switch ($op) {
+            case '*':
+                return $l * $r;
+            case '/':
+                if ($r == 0) throw new \Exception("División por cero.");
+                if (is_int($l) && is_int($r)) return intdiv($l, $r);
+                return $l / $r;
+            case '%':
+                return $l % $r;
+        }
+        return null;
     }
     public function visitRelExpr($ctx)
     {

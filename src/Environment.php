@@ -36,6 +36,7 @@ class Environment
             if (is_bool($valor)) $valStr = $valor ? "true" : "false";
             elseif ($valor instanceof GolampiArray) $valStr = "Array[" . $valor->size . "]";
             elseif ($valor instanceof FunctionDef) $valStr = "Function";
+            elseif ($valor instanceof Reference) $valStr = "Pointer -> " . $valor->targetType;
             elseif (is_array($valor)) $valStr = "List"; // Para retornos múltiples temporales
             else $valStr = (string)$valor;
         }

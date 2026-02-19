@@ -137,6 +137,56 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitForInfinite(Context\ForInfiniteContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `ForVarDecl` labeled alternative
+	 * in {@see GolampiParser::forInit()}.
+	 *
+	 * @param Context\ForVarDeclContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForVarDecl(Context\ForVarDeclContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ForAssign` labeled alternative
+	 * in {@see GolampiParser::forInit()}.
+	 *
+	 * @param Context\ForAssignContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForAssign(Context\ForAssignContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ForEmpty` labeled alternative
+	 * in {@see GolampiParser::forInit()}.
+	 *
+	 * @param Context\ForEmptyContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForEmpty(Context\ForEmptyContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ForPostAssign` labeled alternative
+	 * in {@see GolampiParser::forPost()}.
+	 *
+	 * @param Context\ForPostAssignContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForPostAssign(Context\ForPostAssignContext $context);
+
+	/**
+	 * Visit a parse tree produced by the `ForPostEmpty` labeled alternative
+	 * in {@see GolampiParser::forPost()}.
+	 *
+	 * @param Context\ForPostEmptyContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForPostEmpty(Context\ForPostEmptyContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `SwitchStatement` labeled alternative
 	 * in {@see GolampiParser::switchStmt()}.
 	 *

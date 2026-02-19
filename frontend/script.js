@@ -1,25 +1,58 @@
-async function compilar() {
-  const codigo = document.getElementById("code").value;
-  const consoleDiv = document.getElementById("console");
+let editor;
+let lastResponse = null;
 
+window.onload = function () {
+  editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+    mode: "go",
+    theme: "dracula",
+    lineNumbers: true,
+    autoCloseBrackets: true,
+    tabSize: 4,
+    indentUnit: 4,
+  });
+
+  // Listener para Abrir Archivo
+  document.getElementById("fileInput").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      editor.setValue(e.target.result); // Poner contenido en el editor
+    };
+    reader.readAsText(file);
+    // Limpiar el input para permitir recargar el mismo archivo si es necesario
+    e.target.value = "";
+  });
+};
+
+async function compilar() {
+  const consoleDiv = document.getElementById("console");
+  const astView = document.getElementById("ast-view");
+  const btnRun = document.getElementById("btn-run");
+
+  const codigo = editor.getValue();
+
+  btnRun.disabled = true;
+  btnRun.innerText = "Cargando ...";
   consoleDiv.innerText = "Compilando...";
 
   try {
-    // Hacemos fetch a la raíz (../compile.php)
     const response = await fetch("../compile.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ codigo: codigo }),
     });
 
-    if (!response.ok) throw new Error("Error en el servidor");
+    if (!response.ok) throw new Error("Error HTTP: " + response.status);
 
     const data = await response.json();
+    lastResponse = data; // Guardar datos para descargas
 
     // 1. Consola
     consoleDiv.innerText = data.output || ">> Ejecución finalizada sin salida.";
 
-    // 2. Tabla de Símbolos
+    // 2. Símbolos
     const symbolsBody = document.querySelector("#symbols-table tbody");
     symbolsBody.innerHTML = "";
     data.simbolos.forEach((s) => {
@@ -32,7 +65,7 @@ async function compilar() {
             </tr>`;
     });
 
-    // 3. Tabla de Errores
+    // 3. Errores
     const errorsBody = document.querySelector("#errors-table tbody");
     errorsBody.innerHTML = "";
     if (data.errores.length > 0) {
@@ -48,16 +81,70 @@ async function compilar() {
                     <td>${e.col}</td>
                 </tr>`;
       });
-      switchTab("errors"); // Cambiar pestaña automáticamente si hay error
+      switchTab("errors");
     } else {
       switchTab("console");
     }
+
+    // 4. AST
+    const formattedAst = data.ast
+      ? data.ast.replace(/\(/g, "\n(")
+      : "// No AST available";
+    astView.innerText = formattedAst;
   } catch (error) {
-    consoleDiv.innerText =
-      "Error de conexión: " +
-      error +
-      "\n Asegúrate de correr 'php -S localhost:8000' en la carpeta raíz.";
+    consoleDiv.innerText = "Error: " + error;
+  } finally {
+    btnRun.disabled = false;
+    btnRun.innerText = "▶ EJECUTAR";
   }
+}
+
+// --- FUNCIÓN DE DESCARGA ---
+function descargar(tipo) {
+  if (!lastResponse) {
+    alert("Primero debes ejecutar un programa.");
+    return;
+  }
+
+  let contenido = "";
+  let nombreArchivo = "reporte";
+  let extension = "txt";
+
+  if (tipo === "console") {
+    contenido = lastResponse.output;
+    nombreArchivo = "consola_salida";
+  } else if (tipo === "ast") {
+    contenido = lastResponse.ast;
+    nombreArchivo = "ast_tree";
+  } else if (tipo === "symbols") {
+    contenido = "ID,Tipo,Ambito,Valor,Linea,Columna\n"; // Cabecera CSV
+    lastResponse.simbolos.forEach((s) => {
+      // Escapar comas en los valores para no romper el CSV
+      const val = String(s.valor).replace(/,/g, " ");
+      contenido += `${s.id},${s.tipo},${s.ambito},${val},${s.linea},${s.columna}\n`;
+    });
+    nombreArchivo = "tabla_simbolos";
+    extension = "csv";
+  } else if (tipo === "errors") {
+    contenido = "Tipo,Descripcion,Linea,Columna\n";
+    lastResponse.errores.forEach((e) => {
+      const desc = e.desc.replace(/,/g, " ");
+      contenido += `${e.tipo},${desc},${e.linea},${e.col}\n`;
+    });
+    nombreArchivo = "reporte_errores";
+    extension = "csv";
+  }
+
+  // Crear Blob y link de descarga
+  const blob = new Blob([contenido], { type: "text/plain" });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${nombreArchivo}.${extension}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
 }
 
 function switchTab(tabName) {
@@ -73,8 +160,11 @@ function switchTab(tabName) {
 }
 
 function limpiar() {
-  document.getElementById("code").value = "";
-  document.getElementById("console").innerText = "";
+  editor.setValue("func main() {\n    \n}");
+  document.getElementById("console").innerText = "// Listo";
+  document.getElementById("ast-view").innerText = "";
   document.querySelector("#symbols-table tbody").innerHTML = "";
   document.querySelector("#errors-table tbody").innerHTML = "";
+  lastResponse = null;
+  switchTab("console");
 }

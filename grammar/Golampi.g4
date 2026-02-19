@@ -45,9 +45,16 @@ ifStmt:
 	'if' expression block ('else' (block | ifStmt))? # IfStatement;
 
 forStmt:
-	'for' varDecl expression ';' assignStmt block	# ForClassic
+	'for' forInit ';' expression ';' forPost block	# ForClassic
 	| 'for' expression block						# ForWhile
 	| 'for' block									# ForInfinite;
+
+forInit:
+	'var' ID type ('=' expression)?	# ForVarDecl
+	| assignStmt					# ForAssign
+	|								# ForEmpty;
+
+forPost: assignStmt # ForPostAssign | # ForPostEmpty;
 
 switchStmt:
 	'switch' expression '{' switchCase* '}' # SwitchStatement;

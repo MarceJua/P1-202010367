@@ -23,7 +23,8 @@ $input = $data['codigo'] ?? '';
 $response = [
     'output' => '',
     'errores' => [],
-    'simbolos' => []
+    'simbolos' => [],
+    'ast' => ''
 ];
 
 // Si viene vacío, retornamos vacío
@@ -58,6 +59,7 @@ try {
     if ($tree !== null) {
         $visitor = new Visitor();
         $visitor->visit($tree);
+        $response['ast'] = $tree->toStringTree($parser->getRuleNames());
     }
 } catch (\Throwable $e) {
     echo "\n ERROR CRÍTICO DEL SERVIDOR:\n" . $e->getMessage();

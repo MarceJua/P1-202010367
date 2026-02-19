@@ -4,54 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Golampi IDE</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/go/go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+
     <link rel="stylesheet" href="style.css">
+    <style>
+        .tab-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; background: #252526; border-bottom: 1px solid #3e3e42; }
+        .btn-download { background: #2d2d2d; color: #fff; border: 1px solid #3e3e42; padding: 4px 10px; cursor: pointer; font-size: 0.8rem; border-radius: 3px; }
+        .btn-download:hover { background: #3e3e42; }
+    </style>
 </head>
 <body>
 
 <header>
-    <h1>⚡ Golampi Compiler</h1>
-    <span style="font-size: 0.9rem; color: #888">202010367</span>
+    <div class="brand">
+        <h1>⚡ Golampi Compiler</h1>
+        <span class="badge">202010367</span>
+    </div>
+    <div class="actions">
+        <input type="file" id="fileInput" style="display: none;" accept=".txt,.go,.golampi">
+        
+        <button class="secondary" onclick="document.getElementById('fileInput').click()">📂 Abrir Archivo</button>
+        <button id="btn-run" onclick="compilar()">▶ EJECUTAR</button>
+        <button id="btn-clean" class="secondary" onclick="limpiar()">Limpiar</button>
+    </div>
 </header>
-
-<div class="toolbar">
-    <button onclick="compilar()">▶ EJECUTAR</button>
-    <button class="secondary" onclick="limpiar()">Limpiar</button>
-</div>
 
 <div class="main-container">
     <div class="editor-container">
-        <textarea id="code" spellcheck="false" placeholder="// Escribe tu código Golampi aquí...">
-func main() {
-    fmt.Println("¡Bienvenido a Golampi Web!")
-    var a int = 10
-    var b int = 20
-    fmt.Println("Suma:", a + b)
-}</textarea>
+        <textarea id="code" name="code"></textarea>
     </div>
 
     <div class="output-container">
         <div class="tabs">
-            <div id="btn-console" class="tab active" onclick="switchTab('console')">Consola</div>
-            <div id="btn-symbols" class="tab" onclick="switchTab('symbols')">Símbolos</div>
-            <div id="btn-errors" class="tab" onclick="switchTab('errors')">Errores</div>
+            <button id="btn-console" class="tab active" onclick="switchTab('console')">Terminal</button>
+            <button id="btn-symbols" class="tab" onclick="switchTab('symbols')">Símbolos</button>
+            <button id="btn-errors" class="tab" onclick="switchTab('errors')">Errores</button>
+            <button id="btn-ast" class="tab" onclick="switchTab('ast')">AST</button>
         </div>
 
         <div id="tab-console" class="tab-content active">
+            <div class="tab-header">
+                <span>Salida Estándar</span>
+                <button class="btn-download" onclick="descargar('console')">💾 Descargar</button>
+            </div>
             <pre id="console">// Esperando ejecución...</pre>
         </div>
 
         <div id="tab-symbols" class="tab-content">
-            <table id="symbols-table">
-                <thead><tr><th>ID</th><th>Tipo</th><th>Ámbito</th><th>Valor</th><th>Pos</th></tr></thead>
-                <tbody></tbody>
-            </table>
+            <div class="tab-header">
+                <span>Tabla de Símbolos</span>
+                <button class="btn-download" onclick="descargar('symbols')">💾 Descargar CSV</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="symbols-table">
+                    <thead><tr><th>ID</th><th>Tipo</th><th>Ámbito</th><th>Valor</th><th>Pos</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="tab-errors" class="tab-content">
-            <table id="errors-table">
-                <thead><tr><th>Tipo</th><th>Descripción</th><th>Línea</th><th>Columna</th></tr></thead>
-                <tbody></tbody>
-            </table>
+            <div class="tab-header">
+                <span>Reporte de Errores</span>
+                <button class="btn-download" onclick="descargar('errors')">💾 Descargar CSV</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="errors-table">
+                    <thead><tr><th>Tipo</th><th>Descripción</th><th>Línea</th><th>Col</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-ast" class="tab-content">
+            <div class="tab-header">
+                <span>Árbol de Sintaxis Abstracta</span>
+                <button class="btn-download" onclick="descargar('ast')">💾 Descargar TXT</button>
+            </div>
+            <pre id="ast-view" style="padding: 10px; color: #a9b7c6; font-size: 13px;">// El árbol aparecerá aquí...</pre>
         </div>
     </div>
 </div>

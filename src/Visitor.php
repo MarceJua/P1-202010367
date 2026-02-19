@@ -66,26 +66,15 @@ class Visitor extends GolampiBaseVisitor
             $valor = $this->visit($ctx->expression());
         } else {
             // Valores por defecto
-            if (str_starts_with($tipoStr, '[')) {
-                if (preg_match('/^\[(\d+)\](.+)$/', $tipoStr, $matches)) {
-                    $size = intval($matches[1]);
-                    $subType = $matches[2];
-                    $valor = new GolampiArray($size, $subType);
-                }
-            } else {
-                $valor = match ($tipoStr) {
-                    'int', 'int32' => 0,
-                    'float32' => 0.0,
-                    'string' => "",
-                    'bool' => false,
-                    'rune' => 0,
-                    default => null
-                };
-            }
+            $valor = $this->obtenerValorPorDefecto($tipoStr);
         }
 
         // Modo Resiliente: Intentamos declarar, si falla registramos error pero NO detenemos.
         try {
+            if ($valor !== null) {
+                $this->validarTipoConString($tipoStr, $valor, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+            }
+
             $this->entorno->declarar(
                 $id,
                 $valor,
@@ -105,6 +94,8 @@ class Visitor extends GolampiBaseVisitor
         $valor = $this->visit($ctx->expression());
 
         try {
+            $this->validarTipoConString($tipo, $valor, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+
             $this->entorno->declarar(
                 $id,
                 $valor,
@@ -144,15 +135,7 @@ class Visitor extends GolampiBaseVisitor
             $val = $valores[$i];
 
             // Inferencia básica
-            $tipo = match (true) {
-                is_int($val) => 'int',
-                is_float($val) => 'float32',
-                is_bool($val) => 'bool',
-                is_string($val) => 'string',
-                $val instanceof GolampiArray => 'array',
-                is_null($val) => 'nil',
-                default => 'unknown'
-            };
+            $tipo = $this->inferirTipo($val);
 
             try {
                 $this->entorno->declarar($id, $val, $tipo, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
@@ -191,6 +174,29 @@ class Visitor extends GolampiBaseVisitor
                 '-=' => $actual - $valDerecha,
                 '*=' => $actual * $valDerecha,
                 '/=' => $actual / $valDerecha,
+                default => $actual
+            };
+
+            // Validar tipo después de la operación
+            $this->validarTipoConString($var['tipo'], $nuevoValor, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+            $this->entorno->asignar($id, $nuevoValor);
+        } catch (\Exception $e) {
+            ErrorManager::agregar("Semántico", $e->getMessage(), $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+        }
+    }
+
+    public function visitIncrementDecrement($ctx)
+    {
+        $id = $ctx->ID()->getText();
+        $op = $ctx->op->getText();
+
+        try {
+            $var = $this->entorno->obtener($id);
+            $actual = $var['valor'];
+
+            $nuevoValor = match ($op) {
+                '++' => $actual + 1,
+                '--' => $actual - 1,
                 default => $actual
             };
 
@@ -246,6 +252,9 @@ class Visitor extends GolampiBaseVisitor
             $valorFinal = match ($op) {
                 '=' => $nuevoValor,
                 '+=' => $valorActual + $nuevoValor,
+                '-=' => $valorActual - $nuevoValor,
+                '*=' => $valorActual * $nuevoValor,
+                '/=' => $valorActual / $nuevoValor,
                 default => $nuevoValor
             };
             $arreglo->set($indice, $valorFinal);
@@ -349,11 +358,9 @@ class Visitor extends GolampiBaseVisitor
             }
             if ($nombreFuncion === 'typeof') {
                 $val = $this->visit($ctx->expressionList()->expression(0));
-                if ($val instanceof GolampiArray) return "array";
-                return gettype($val) == 'double' ? 'float32' : gettype($val);
+                return $this->inferirTipo($val);
             }
             if ($nombreFuncion === 'substr') {
-                // ... lógica substr ...
                 $args = $ctx->expressionList()->expression();
                 $str = $this->visit($args[0]);
                 $start = $this->visit($args[1]);
@@ -375,7 +382,7 @@ class Visitor extends GolampiBaseVisitor
             }
 
             if (count($argumentos) !== count($funcion->params)) {
-                throw new \Exception("Argumentos incorrectos para '$nombreFuncion'.");
+                throw new \Exception("Argumentos incorrectos para '$nombreFuncion'. Se esperaban " . count($funcion->params) . " pero se recibieron " . count($argumentos) . ".");
             }
 
             // Entorno de Función
@@ -385,6 +392,10 @@ class Visitor extends GolampiBaseVisitor
             for ($i = 0; $i < count($argumentos); $i++) {
                 $pName = $funcion->params[$i]['id'];
                 $pType = $funcion->params[$i]['tipo'];
+
+                // Validar tipo del argumento
+                $this->validarTipoConString($pType, $argumentos[$i], $ctx->getStart()->getLine(), 0);
+
                 $envFuncion->declarar($pName, $argumentos[$i], $pType, $ctx->getStart()->getLine(), 0);
             }
 
@@ -451,7 +462,6 @@ class Visitor extends GolampiBaseVisitor
         // Cases
         foreach ($ctx->switchCase() as $caseCtx) {
             // Verificar si es default usando el token o el nombre de clase
-            // Nota: Dependiendo de tu versión de ANTLR, puede ser Context\DefaultBlockContext
             if (str_contains(get_class($caseCtx), 'DefaultBlockContext')) continue;
 
             $listaExprs = $caseCtx->expressionList()->expression();
@@ -482,23 +492,215 @@ class Visitor extends GolampiBaseVisitor
         }
     }
 
+    // ==========================================
+    // ✅ CORRECCIÓN: Nuevos métodos para FOR
+    // ==========================================
+
     public function visitForClassic($ctx)
     {
         $anterior = $this->entorno;
         $this->entorno = new Environment($anterior, "for loop");
-        $this->visit($ctx->varDecl());
+
+        // Ejecutar inicialización (forInit)
+        $this->visit($ctx->forInit());
 
         while (true) {
+            // Evaluar condición
             if ($this->visit($ctx->expression()) === false) break;
+
+            try {
+                $this->visit($ctx->block());
+            } catch (BreakException $e) {
+                break;
+            } catch (ContinueException $e) {
+                // Continue: ejecutamos el post antes de la siguiente iteración
+            }
+
+            // Ejecutar post (incremento/decremento)
+            $this->visit($ctx->forPost());
+        }
+
+        $this->entorno = $anterior;
+    }
+
+    public function visitForWhile($ctx)
+    {
+        while (true) {
+            if ($this->visit($ctx->expression()) === false) break;
+
             try {
                 $this->visit($ctx->block());
             } catch (BreakException $e) {
                 break;
             } catch (ContinueException $e) {
             }
-            $this->visit($ctx->assignStmt());
         }
-        $this->entorno = $anterior;
+    }
+
+    public function visitForInfinite($ctx)
+    {
+        while (true) {
+            try {
+                $this->visit($ctx->block());
+            } catch (BreakException $e) {
+                break;
+            } catch (ContinueException $e) {
+            }
+        }
+    }
+
+    // --- Métodos para forInit ---
+
+    public function visitForVarDecl($ctx)
+    {
+        // Declaración de variable dentro del for: var i int = 5
+        $id = $ctx->ID()->getText();
+        $tipoStr = $ctx->type()->getText();
+
+        $valor = null;
+        if ($ctx->expression() !== null) {
+            $valor = $this->visit($ctx->expression());
+        } else {
+            $valor = $this->obtenerValorPorDefecto($tipoStr);
+        }
+
+        try {
+            if ($valor !== null) {
+                $this->validarTipoConString($tipoStr, $valor, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+            }
+
+            $this->entorno->declarar(
+                $id,
+                $valor,
+                $tipoStr,
+                $ctx->getStart()->getLine(),
+                $ctx->getStart()->getCharPositionInLine()
+            );
+        } catch (\Exception $e) {
+            ErrorManager::agregar("Semántico", $e->getMessage(), $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+        }
+    }
+
+    public function visitForAssign($ctx)
+    {
+        // Asignación en el init del for: i = 0
+        return $this->visit($ctx->assignStmt());
+    }
+
+    public function visitForEmpty($ctx)
+    {
+        // Init vacío
+        return null;
+    }
+
+    // --- Métodos para forPost ---
+
+    public function visitForPostAssign($ctx)
+    {
+        // Post del for: i++, i--, etc.
+        return $this->visit($ctx->assignStmt());
+    }
+
+    public function visitForPostEmpty($ctx)
+    {
+        // Post vacío
+        return null;
+    }
+
+    // ==========================================
+    // ✅ FIN DE CORRECCIONES PARA FOR
+    // ==========================================
+
+    // --- UTILIDADES DE VALIDACIÓN ---
+
+    private function obtenerValorPorDefecto(string $tipoStr)
+    {
+        if (str_starts_with($tipoStr, '[')) {
+            if (preg_match('/^\[(\d+)\](.+)$/', $tipoStr, $matches)) {
+                $size = intval($matches[1]);
+                $subType = $matches[2];
+                return new GolampiArray($size, $subType);
+            }
+        }
+
+        return match ($tipoStr) {
+            'int', 'int32' => 0,
+            'float32' => 0.0,
+            'string' => "",
+            'bool' => false,
+            'rune' => 0,
+            default => null
+        };
+    }
+
+    private function inferirTipo($valor): string
+    {
+        return match (true) {
+            is_int($valor) => 'int',
+            is_float($valor) => 'float32',
+            is_bool($valor) => 'bool',
+            is_string($valor) => 'string',
+            $valor instanceof GolampiArray => 'array',
+            is_null($valor) => 'nil',
+            default => 'unknown'
+        };
+    }
+
+    private function validarTipoConString(string $tipoEsperado, $valor, int $linea, int $columna): void
+    {
+        if ($valor === null && $tipoEsperado !== 'nil') {
+            // Permitimos null para inicializaciones
+            return;
+        }
+
+        // Arrays
+        if (str_starts_with($tipoEsperado, '[')) {
+            if (!($valor instanceof GolampiArray)) {
+                ErrorManager::agregar(
+                    "Semántico",
+                    "Error de tipo: Se esperaba un array '$tipoEsperado' pero se recibió '" . $this->inferirTipo($valor) . "'.",
+                    $linea,
+                    $columna
+                );
+            }
+            return;
+        }
+
+        // Punteros
+        if (str_starts_with($tipoEsperado, '*')) {
+            if (!($valor instanceof Reference)) {
+                ErrorManager::agregar(
+                    "Semántico",
+                    "Error de tipo: Se esperaba un puntero '$tipoEsperado' pero se recibió '" . $this->inferirTipo($valor) . "'.",
+                    $linea,
+                    $columna
+                );
+            }
+            return;
+        }
+
+        $tipoReal = $this->inferirTipo($valor);
+
+        // Normalizar tipos (alias compatibles)
+        $tipoEsperadoNorm = match ($tipoEsperado) {
+            'int32' => 'int',
+            'rune' => 'int', // Rune es básicamente int32
+            default => $tipoEsperado
+        };
+
+        $tipoRealNorm = match ($tipoReal) {
+            'double' => 'float32',
+            default => $tipoReal
+        };
+
+        if ($tipoEsperadoNorm !== $tipoRealNorm && $tipoReal !== 'unknown') {
+            ErrorManager::agregar(
+                "Semántico",
+                "Error de tipo: Se esperaba '$tipoEsperado' pero se recibió '$tipoReal'.",
+                $linea,
+                $columna
+            );
+        }
     }
 
     // --- BASICOS ---
@@ -532,20 +734,29 @@ class Visitor extends GolampiBaseVisitor
     }
     public function visitRuneExpr($ctx)
     {
-        return trim($ctx->getText(), "'");
+        $char = trim($ctx->getText(), "'");
+        // Manejar escapes
+        $char = str_replace(['\\n', '\\t', '\\\\', "\\'"], ["\n", "\t", "\\", "'"], $char);
+        return ord($char); // Retornar como int (código ASCII/Unicode)
     }
     public function visitStrExpr($ctx)
     {
-        return str_replace(['\\n', '\\t', '\\"'], ["\n", "\t", "\""], substr($ctx->getText(), 1, -1));
+        return str_replace(['\\n', '\\t', '\\"', '\\\\'], ["\n", "\t", "\"", "\\"], substr($ctx->getText(), 1, -1));
     }
 
-    // Aritmética y Lógica (Simplificado)
+    // Aritmética y Lógica
+    public function visitUnaryMinusExpr($ctx)
+    {
+        return -$this->visit($ctx->expression());
+    }
+
     public function visitAddSubExpr($ctx)
     {
         $l = $this->visit($ctx->expression(0));
         $r = $this->visit($ctx->expression(1));
         return ($ctx->op->getText() === '+') ? ($l + $r) : ($l - $r);
     }
+
     public function visitMulDivExpr($ctx)
     {
         $l = $this->visit($ctx->expression(0));
@@ -556,7 +767,10 @@ class Visitor extends GolampiBaseVisitor
             case '*':
                 return $l * $r;
             case '/':
-                if ($r == 0) throw new \Exception("División por cero.");
+                if ($r == 0) {
+                    ErrorManager::agregar("Semántico", "División por cero.", $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+                    return 0;
+                }
                 if (is_int($l) && is_int($r)) return intdiv($l, $r);
                 return $l / $r;
             case '%':
@@ -564,6 +778,7 @@ class Visitor extends GolampiBaseVisitor
         }
         return null;
     }
+
     public function visitRelExpr($ctx)
     {
         $l = $this->visit($ctx->expression(0));
@@ -577,36 +792,44 @@ class Visitor extends GolampiBaseVisitor
             default => false
         };
     }
+
     public function visitEqExpr($ctx)
     {
         $l = $this->visit($ctx->expression(0));
         $r = $this->visit($ctx->expression(1));
         return ($ctx->op->getText() === '==') ? ($l === $r) : ($l !== $r);
     }
+
     public function visitAndExpr($ctx)
     {
         return $this->visit($ctx->expression(0)) && $this->visit($ctx->expression(1));
     }
+
     public function visitOrExpr($ctx)
     {
         return $this->visit($ctx->expression(0)) || $this->visit($ctx->expression(1));
     }
+
     public function visitNotExpr($ctx)
     {
         return !$this->visit($ctx->expression());
     }
+
     public function visitBreakStmt($ctx)
     {
         throw new BreakException();
     }
+
     public function visitContinueStmt($ctx)
     {
         throw new ContinueException();
     }
+
     public function visitExprStmt($ctx)
     {
         $this->visit($ctx->expression());
     }
+
     public function visitParenExpr($ctx)
     {
         return $this->visit($ctx->expression());

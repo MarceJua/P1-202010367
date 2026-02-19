@@ -42,7 +42,8 @@ returnStmt: 'return' expressionList? stmtTerminator;
 exprStmt: expression stmtTerminator;
 
 ifStmt:
-	'if' expression block ('else' (block | ifStmt))? # IfStatement;
+	'if' expression block ('else' (block | ifStmt))?	# IfStatement
+	| 'if' expression instruction ('else' instruction)?	# IfStatementSingle;
 
 forStmt:
 	'for' forInit ';' expression ';' forPost block	# ForClassic

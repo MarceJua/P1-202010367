@@ -107,6 +107,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitIfStatement(Context\IfStatementContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `IfStatementSingle` labeled alternative
+	 * in {@see GolampiParser::ifStmt()}.
+	 *
+	 * @param Context\IfStatementSingleContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitIfStatementSingle(Context\IfStatementSingleContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `ForClassic` labeled alternative
 	 * in {@see GolampiParser::forStmt()}.
 	 *

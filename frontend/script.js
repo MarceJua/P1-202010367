@@ -168,3 +168,43 @@ function limpiar() {
   lastResponse = null;
   switchTab("console");
 }
+
+function descargarCodigo() {
+  const codigo = editor.getValue();
+
+  if (!codigo.trim()) {
+    alert("El editor está vacío. Escribe algo de código antes de guardar.");
+    return;
+  }
+
+  let nombreArchivo = prompt(
+    "Ingresa el nombre para guardar tu archivo:",
+    "mi_programa",
+  );
+
+  if (nombreArchivo === null) {
+    return;
+  }
+
+  nombreArchivo = nombreArchivo.trim();
+  if (nombreArchivo === "") {
+    nombreArchivo = "golampi"; // Nombre por defecto
+  }
+
+  if (!nombreArchivo.toLowerCase().endsWith(".txt")) {
+    nombreArchivo += ".txt";
+  }
+
+  const blob = new Blob([codigo], { type: "text/plain" });
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombreArchivo;
+
+  document.body.appendChild(a);
+  a.click();
+
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+}

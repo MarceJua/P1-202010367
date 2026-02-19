@@ -455,6 +455,16 @@ class Visitor extends GolampiBaseVisitor
         }
     }
 
+    public function visitIfStatementSingle($ctx)
+    {
+        $cond = $this->visit($ctx->expression());
+        if ($cond === true) {
+            $this->visit($ctx->instruction(0));
+        } elseif ($ctx->ELSE() !== null) {
+            $this->visit($ctx->instruction(1));
+        }
+    }
+
     public function visitSwitchStatement($ctx)
     {
         $valorSwitch = $this->visit($ctx->expression());

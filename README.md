@@ -31,6 +31,7 @@
 ## 2. Guía de Uso de la Interfaz
 
 ### Área de Trabajo
+<img width="1922" height="1039" alt="Principal" src="https://github.com/user-attachments/assets/b344055f-095d-40e5-a6d2-23122624afb6" />
 
 - **Editor de Código (Izquierda):** Aquí es donde escribirá su código Golampi. El editor cuenta con resaltado de sintaxis, números de línea y cierre automático de paréntesis para facilitar la escritura.
 - **Barra de Herramientas (Superior):**
@@ -59,13 +60,16 @@ El panel de resultados cuenta con tres pestañas:
 ## 3. Ejemplo de Sesión
 
 1. **Captura 1 (Código Exitoso):**
+<img width="1922" height="1039" alt="Terminal" src="https://github.com/user-attachments/assets/5e8ab481-7b76-462a-aa7b-4cd429501c6c" />
 
 _Ejecución exitosa de un programa básico._
 
 2. **Captura 2 (Tabla de Símbolos):**
+<img width="1922" height="1039" alt="Simbolos" src="https://github.com/user-attachments/assets/d12f45c0-d877-4165-b48c-f39809505571" />
 
 _Visualización de las variables almacenadas en memoria._
 
 1. **Captura 3 (Reporte de Errores):**
+<img width="1922" height="1039" alt="Errores" src="https://github.com/user-attachments/assets/ebf2d2e1-7948-4d7a-bcc0-30102475cd69" />
 
 _Detección y reporte de errores semánticos._

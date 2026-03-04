@@ -58,7 +58,7 @@ forInit:
 forPost: assignStmt # ForPostAssign | # ForPostEmpty;
 
 switchStmt:
-	'switch' expression '{' switchCase* '}' # SwitchStatement;
+	'switch' expression '{' (switchCase | NEWLINE)* '}' # SwitchStatement;
 
 switchCase:
 	'case' expressionList ':' instruction*	# CaseBlock
@@ -70,7 +70,7 @@ continueStmt: 'continue' stmtTerminator;
 printStmt: 'fmt.Println' '(' expressionList? ')' stmtTerminator;
 
 varDecl:
-	'var' ID type ('=' expression)? stmtTerminator # VarDeclaration;
+	'var' idList type ('=' expressionList)? stmtTerminator # VarDeclaration;
 
 constDecl:
 	'const' ID type '=' expression stmtTerminator # ConstDeclaration;

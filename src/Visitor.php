@@ -58,32 +58,46 @@ class Visitor extends GolampiBaseVisitor
 
     public function visitVarDeclaration($ctx)
     {
-        $id = $ctx->ID()->getText();
-        $tipoStr = $ctx->type()->getText();
-
-        $valor = null;
-        if ($ctx->expression() !== null) {
-            $valor = $this->visit($ctx->expression());
-        } else {
-            // Valores por defecto
-            $valor = $this->obtenerValorPorDefecto($tipoStr);
+        $ids = [];
+        foreach ($ctx->idList()->ID() as $node) {
+            $ids[] = $node->getText();
         }
 
-        // Modo Resiliente: Intentamos declarar, si falla registramos error pero NO detenemos.
-        try {
-            if ($valor !== null) {
-                $this->validarTipoConString($tipoStr, $valor, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
-            }
+        $tipoStr = $ctx->type()->getText();
 
-            $this->entorno->declarar(
-                $id,
-                $valor,
-                $tipoStr,
-                $ctx->getStart()->getLine(),
-                $ctx->getStart()->getCharPositionInLine()
-            );
-        } catch (\Exception $e) {
-            ErrorManager::agregar("Semántico", $e->getMessage(), $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+        $valores = [];
+        if ($ctx->expressionList() !== null) {
+            foreach ($ctx->expressionList()->expression() as $expr) {
+                $valores[] = $this->visit($expr);
+            }
+        }
+
+        if (count($valores) === 0) {
+            $defVal = $this->obtenerValorPorDefecto($tipoStr);
+            for ($i = 0; $i < count($ids); $i++) {
+                $valores[] = $defVal;
+            }
+        }
+
+        for ($i = 0; $i < count($ids); $i++) {
+            $id = $ids[$i];
+            $valor = $valores[$i] ?? null;
+
+            try {
+                if ($valor !== null) {
+                    $this->validarTipoConString($tipoStr, $valor, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+                }
+
+                $this->entorno->declarar(
+                    $id,
+                    $valor,
+                    $tipoStr,
+                    $ctx->getStart()->getLine(),
+                    $ctx->getStart()->getCharPositionInLine()
+                );
+            } catch (\Exception $e) {
+                ErrorManager::agregar("Semántico", $e->getMessage(), $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+            }
         }
     }
 
@@ -123,7 +137,6 @@ class Visitor extends GolampiBaseVisitor
         if (count($ids) > 1 && count($valores) === 1 && is_array($valores[0])) {
             $valores = $valores[0];
         }
-
         if (count($ids) !== count($valores)) {
             ErrorManager::agregar("Semántico", "Desajuste en asignación corta.", $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
             return;
@@ -141,7 +154,6 @@ class Visitor extends GolampiBaseVisitor
                 $this->entorno->declarar($id, $val, $tipo, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
                 $algunaNueva = true;
             } catch (\Exception $e) {
-                // Si ya existe, intentamos asignar
                 try {
                     $this->entorno->asignar($id, $val);
                 } catch (\Exception $exAsign) {

@@ -107,9 +107,11 @@ Las expresiones manejan la lógica, aritmética y acceso a datos. La precedencia
 7. **Lógica OR:** `||`
 
 ## 2. Diagrama de Clases (Arquitectura)
+<img width="1905" height="1964" alt="DiagramaClases" src="https://github.com/user-attachments/assets/2e6bd63c-ae02-4328-948f-93ef7d490b3b" />
 
 El proyecto utiliza el patrón de diseño **Visitor** para recorrer el Árbol de Sintaxis Abstracta (AST) generado por ANTLR.
 
 ## 3. Flujo de Procesamiento (Tabla de Símbolos)
+<img width="1654" height="1780" alt="FlujoProcesamiento" src="https://github.com/user-attachments/assets/cdb8251d-7141-4619-b84f-4aa3ce69e19d" />
 
 Este diagrama explica cómo el código fuente se convierte en ejecución y cómo se llena la tabla de símbolos.

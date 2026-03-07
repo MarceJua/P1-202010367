@@ -157,6 +157,16 @@ interface GolampiVisitor extends ParseTreeVisitor
 	public function visitForVarDecl(Context\ForVarDeclContext $context);
 
 	/**
+	 * Visit a parse tree produced by the `ForShortVarDecl` labeled alternative
+	 * in {@see GolampiParser::forInit()}.
+	 *
+	 * @param Context\ForShortVarDeclContext $context The parse tree.
+	 *
+	 * @return mixed The visitor result.
+	 */
+	public function visitForShortVarDecl(Context\ForShortVarDeclContext $context);
+
+	/**
 	 * Visit a parse tree produced by the `ForAssign` labeled alternative
 	 * in {@see GolampiParser::forInit()}.
 	 *

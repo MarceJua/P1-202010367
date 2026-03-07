@@ -603,6 +603,42 @@ class Visitor extends GolampiBaseVisitor
         }
     }
 
+    public function visitForShortVarDecl($ctx)
+    {
+        // Declaración corta en el init del for: i := 1
+        $ids = [];
+        foreach ($ctx->idList()->ID() as $node) $ids[] = $node->getText();
+
+        $valores = [];
+        foreach ($ctx->expressionList()->expression() as $expr) {
+            $valores[] = $this->visit($expr);
+        }
+
+        // Desempaquetado de múltiples retornos
+        if (count($ids) > 1 && count($valores) === 1 && is_array($valores[0])) {
+            $valores = $valores[0];
+        }
+
+        if (count($ids) !== count($valores)) {
+            ErrorManager::agregar("Semántico", "Desajuste en asignación corta en for.", $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+            return;
+        }
+
+        for ($i = 0; $i < count($ids); $i++) {
+            $id = $ids[$i];
+            $val = $valores[$i];
+
+            // Inferencia de tipo
+            $tipo = $this->inferirTipo($val);
+
+            try {
+                $this->entorno->declarar($id, $val, $tipo, $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+            } catch (\Exception $e) {
+                ErrorManager::agregar("Semántico", $e->getMessage(), $ctx->getStart()->getLine(), $ctx->getStart()->getCharPositionInLine());
+            }
+        }
+    }
+
     public function visitForAssign($ctx)
     {
         // Asignación en el init del for: i = 0
@@ -658,7 +694,7 @@ class Visitor extends GolampiBaseVisitor
     private function inferirTipo($valor): string
     {
         return match (true) {
-            is_int($valor) => 'int',
+            is_int($valor) => 'int32',
             is_float($valor) => 'float32',
             is_bool($valor) => 'bool',
             is_string($valor) => 'string',
@@ -712,6 +748,7 @@ class Visitor extends GolampiBaseVisitor
 
         $tipoRealNorm = match ($tipoReal) {
             'double' => 'float32',
+            'int32' => 'int',
             default => $tipoReal
         };
 
@@ -732,7 +769,13 @@ class Visitor extends GolampiBaseVisitor
         if ($ctx->expressionList() !== null) {
             foreach ($ctx->expressionList()->expression() as $expr) {
                 $val = $this->visit($expr);
-                $output[] = (is_bool($val) ? ($val ? 'true' : 'false') : $val);
+                if (is_bool($val)) {
+                    $output[] = $val ? 'true' : 'false';
+                } elseif ($val === null) {
+                    $output[] = '<nil>';
+                } else {
+                    $output[] = $val;
+                }
             }
         }
         echo implode(" ", $output) . "\n";

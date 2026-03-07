@@ -52,6 +52,7 @@ forStmt:
 
 forInit:
 	'var' ID type ('=' expression)?	# ForVarDecl
+	| idList ':=' expressionList	# ForShortVarDecl
 	| assignStmt					# ForAssign
 	|								# ForEmpty;
 
@@ -160,10 +161,10 @@ TYPE_STRING: 'string';
 TYPE_BOOL: 'bool';
 
 BOOL: 'true' | 'false';
+NIL: 'nil';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 FLOAT: [0-9]+ '.' [0-9]+;
 RUNE: '\'' ( '\\' . | ~['\\]) '\'';
-NIL: 'nil';
 INT: [0-9]+;
 STRING: '"' ( '\\' . | ~["\\])* '"';
 

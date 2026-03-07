@@ -51,10 +51,10 @@ TYPE_INT=50
 TYPE_STRING=51
 TYPE_BOOL=52
 BOOL=53
-ID=54
-FLOAT=55
-RUNE=56
-NIL=57
+NIL=54
+ID=55
+FLOAT=56
+RUNE=57
 INT=58
 STRING=59
 COMMENT_MULTI=60
@@ -68,8 +68,8 @@ NEWLINE=63
 ','=5
 ';'=6
 '='=7
-':'=8
-':='=9
+':='=8
+':'=9
 '*'=10
 '['=11
 ']'=12
@@ -112,4 +112,4 @@ NEWLINE=63
 '--'=49
 'string'=51
 'bool'=52
-'nil'=57
+'nil'=54
